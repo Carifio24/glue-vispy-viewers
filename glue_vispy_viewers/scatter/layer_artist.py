@@ -18,7 +18,7 @@ VECTOR_PROPERTIES = set(['vector_visible', 'vx_attribute', 'vy_attribute', 'vz_a
                          'vector_scaling', 'vector_origin'])
 ARROW_PROPERTIES = set(['vector_arrowhead'])
 ALPHA_PROPERTIES = set(['alpha'])
-DATA_PROPERTIES = set(['layer', 'x_att', 'y_att', 'z_att'])
+DATA_PROPERTIES = set(['layer', 'x_att', 'y_att', 'z_att', 'clip_data'])
 VISIBLE_PROPERTIES = set(['visible'])
 
 
@@ -190,6 +190,8 @@ class ScatterLayerArtist(VispyLayerArtist):
         self._multiscat.set_data_values(self.id, x, y, z)
 
         # Mask points outside the clip limits
+        self._clip_limits = self._viewer_state.clip_limits if self.state.clip_data else None
+
         if self._clip_limits is None:
             self._multiscat.set_mask(self.id, None)
         else:
