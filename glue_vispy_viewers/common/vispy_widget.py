@@ -119,13 +119,10 @@ class VispyWidgetHelper(object):
 
     def _update_attributes(self):
         if self.viewer_state.x_att is not None:
-            #self.axis.xlabel = self.viewer_state.x_att.label
             self.viewer_state.x_label = self.viewer_state.x_att.label
         if self.viewer_state.y_att is not None:
-            #self.axis.ylabel = self.viewer_state.y_att.label
             self.viewer_state.y_label = self.viewer_state.y_att.label
         if self.viewer_state.z_att is not None:
-            #self.axis.zlabel = self.viewer_state.z_att.label
             self.viewer_state.z_label = self.viewer_state.z_att.label
 
     def _update_labels(self):

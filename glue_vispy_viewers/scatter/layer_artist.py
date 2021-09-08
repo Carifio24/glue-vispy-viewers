@@ -18,7 +18,8 @@ VECTOR_PROPERTIES = set(['vector_visible', 'vx_attribute', 'vy_attribute', 'vz_a
                          'vector_scaling', 'vector_origin'])
 ARROW_PROPERTIES = set(['vector_arrowhead'])
 ALPHA_PROPERTIES = set(['alpha'])
-DATA_PROPERTIES = set(['layer', 'x_att', 'y_att', 'z_att', 'clip_data'])
+DATA_PROPERTIES = set(['layer', 'x_att', 'y_att', 'z_att'])
+DISPLAY_PROPERTIES = set(['x_min', 'x_max', 'y_min', 'y_max', 'z_min', 'z_max', 'clip_data'])
 VISIBLE_PROPERTIES = set(['visible'])
 
 
@@ -317,7 +318,8 @@ class ScatterLayerArtist(VispyLayerArtist):
         self._last_viewer_state.update(self._viewer_state.as_dict())
         self._last_layer_state.update(self.state.as_dict())
 
-        if force or len(changed & DATA_PROPERTIES) > 0:
+        if force or len(changed & DATA_PROPERTIES) > 0\
+                 or len(changed & DISPLAY_PROPERTIES) > 0:
             self._update_data()
             force = True
 
