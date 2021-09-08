@@ -185,19 +185,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QWidget" name="size_row_4" native="true">
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
-          <item>
-           <widget class="QCheckBox" name="bool_clip_data">
-            <property name="text">
-             <string>Restrict to bounding box</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>

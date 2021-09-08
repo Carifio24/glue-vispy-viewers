@@ -43,8 +43,6 @@ class ScatterLayerState(VispyLayerState):
     size_limits_cache = CallbackProperty({})
     cmap_limits_cache = CallbackProperty({})
 
-    clip_data = CallbackProperty(True)
-
     def __init__(self, layer=None, **kwargs):
 
         self._sync_markersize = None

@@ -138,6 +138,8 @@ class IsosurfaceLayerArtist(VispyLayerArtist):
         else:
             data = self.layer[self.state.attribute]
 
+        self._clip_limits = self._viewer_state.clip_limits if self._viewer_state.clip_data else None
+
         if self._clip_limits is not None:
             xmin, xmax, ymin, ymax, zmin, zmax = self._clip_limits
             imin, imax = int(np.ceil(xmin)), int(np.ceil(xmax))

@@ -16,16 +16,19 @@ class Vispy3DViewerState(ViewerState):
     x_att = SelectionCallbackProperty()
     x_min = CallbackProperty(0)
     x_max = CallbackProperty(1)
+    x_label = CallbackProperty("")
     x_stretch = CallbackProperty(1.)
 
     y_att = SelectionCallbackProperty(default_index=1)
     y_min = CallbackProperty(0)
     y_max = CallbackProperty(1)
+    y_label = CallbackProperty("")
     y_stretch = CallbackProperty(1.)
 
     z_att = SelectionCallbackProperty(default_index=2)
     z_min = CallbackProperty(0)
     z_max = CallbackProperty(1)
+    z_label = CallbackProperty("")
     z_stretch = CallbackProperty(1.)
 
     visible_axes = CallbackProperty(True)

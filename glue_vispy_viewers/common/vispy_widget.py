@@ -96,6 +96,9 @@ class VispyWidgetHelper(object):
         if force or any(p in props for p in LIMITS_PROPS) or 'native_aspect' in props:
             self._update_limits()
 
+        if force or any(key in props for key in ('x_label', 'y_label', 'z_label')):
+            self._update_labels()
+
         self.canvas.update()
 
     def _toggle_axes(self):
@@ -116,11 +119,22 @@ class VispyWidgetHelper(object):
 
     def _update_attributes(self):
         if self.viewer_state.x_att is not None:
-            self.axis.xlabel = self.viewer_state.x_att.label
+            #self.axis.xlabel = self.viewer_state.x_att.label
+            self.viewer_state.x_label = self.viewer_state.x_att.label
         if self.viewer_state.y_att is not None:
-            self.axis.ylabel = self.viewer_state.y_att.label
+            #self.axis.ylabel = self.viewer_state.y_att.label
+            self.viewer_state.y_label = self.viewer_state.y_att.label
         if self.viewer_state.z_att is not None:
-            self.axis.zlabel = self.viewer_state.z_att.label
+            #self.axis.zlabel = self.viewer_state.z_att.label
+            self.viewer_state.z_label = self.viewer_state.z_att.label
+
+    def _update_labels(self):
+        if self.viewer_state.x_label:
+            self.axis.xlabel = self.viewer_state.x_label
+        if self.viewer_state.y_label:
+            self.axis.ylabel = self.viewer_state.y_label
+        if self.viewer_state.z_label:
+            self.axis.zlabel = self.viewer_state.z_label
 
     def _update_stretch(self):
         self.scene_transform.scale = (self.viewer_state.x_stretch * self.viewer_state.aspect[0],
