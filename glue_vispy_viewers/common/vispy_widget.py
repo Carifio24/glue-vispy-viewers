@@ -118,12 +118,7 @@ class VispyWidgetHelper(object):
             self.axis.axis_font_size = 8
 
     def _update_attributes(self):
-        if self.viewer_state.x_att is not None:
-            self.viewer_state.x_label = self.viewer_state.x_att.label
-        if self.viewer_state.y_att is not None:
-            self.viewer_state.y_label = self.viewer_state.y_att.label
-        if self.viewer_state.z_att is not None:
-            self.viewer_state.z_label = self.viewer_state.z_att.label
+        pass
 
     def _update_labels(self):
         if self.viewer_state.x_label:
