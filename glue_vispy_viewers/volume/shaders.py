@@ -240,7 +240,9 @@ def get_frag_shader(volumes, clipped=False, n_volume_max=5):
     declarations += "uniform $sampler_type dummy1;\n"
     declarations += "float dummy;\n"
 
+    print(volumes)
     for label in sorted(volumes):
+        print(label)
 
         index = volumes[label]['index']
 
@@ -263,7 +265,7 @@ def get_frag_shader(volumes, clipped=False, n_volume_max=5):
         in_loop += "// Sample texture for layer {0}\n".format(label)
         in_loop += "val = $sample(u_volumetex_{0:d}, loc).g;\n".format(index)
 
-        if volumes[label].get('multiply') is not None:
+        if volumes[label].get('multiply') is not None and volumes[label]['multiply'] in volumes:
             index_other = volumes[volumes[label]['multiply']]['index']
             in_loop += ("if (val != 0) {{ val *= $sample(u_volumetex_{0:d}, loc).g; }}\n"
                         .format(index_other))
