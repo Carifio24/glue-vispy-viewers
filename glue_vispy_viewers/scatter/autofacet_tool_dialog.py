@@ -6,7 +6,7 @@ from echo import add_callback
 from glue.core.state_objects import State
 from glue.core.data_combo_helper import DataCollectionComboHelper
 from glue.external.echo import CallbackProperty, SelectionCallbackProperty
-from glue.external.echo.qt import autoconnect_callbacks_to_qt
+from echo.qt import autoconnect_callbacks_to_qt
 from glue.utils.qt import load_ui
 
 # https://stackoverflow.com/questions/15829782/how-to-restrict-user-input-in-qlineedit-in-pyqt
