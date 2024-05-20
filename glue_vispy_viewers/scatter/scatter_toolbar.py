@@ -4,7 +4,7 @@ import os
 import matplotlib.cm
 import numpy as np
 from qtpy.QtWidgets import QAction
-from sklearn.cluster import DBSCAN, OPTICS
+from sklearn.cluster import DBSCAN, HDBSCAN, OPTICS
 
 from glue.config import viewer_tool
 from glue.core.roi import Roi, Projected3dROI
@@ -124,6 +124,19 @@ class DBSCANAutoFaceter(SKLAutoFaceter):
         super(DBSCANAutoFaceter, self).__init__(DBSCAN)
 
 
+class HDBSCANAutoFaceter(SKLAutoFaceter):
+    name = 'HDBSCAN'
+
+    params = {
+        'cluster_selection_epsilon': AutofacetParameter(name='Cluster Selection Epsilon', value=0),
+        'min_cluster_size': AutofacetParameter(name='Min Cluster Size', value=5),
+        'min_samples': AutofacetParameter(name='Min Samples', value=5)
+    }
+
+    def __init__(self):
+        super(HDBSCANAutoFaceter, self).__init__(HDBSCAN)
+
+
 @viewer_tool
 class AutoFacetTool(DropdownTool):
     icon = AUTOFACET_ICON
@@ -133,7 +146,7 @@ class AutoFacetTool(DropdownTool):
         'cmap': matplotlib.cm.get_cmap("gray"),
         'component': '_facet_labels'
     }
-    faceters = [DBSCANAutoFaceter()]
+    faceters = [DBSCANAutoFaceter(), HDBSCANAutoFaceter()]
 
     def get_info(self, faceter):
         dialog = SegmentationToolDialog(faceter, self.options,
