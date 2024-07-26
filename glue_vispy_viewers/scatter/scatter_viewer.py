@@ -14,7 +14,7 @@ class VispyScatterViewerMixin(BaseVispyViewerMixin):
 
     tools = BaseVispyViewerMixin.tools + ['vispy:lasso', 'vispy:rectangle',
                                           'vispy:circle', 'scatter3d:point',
-                                          'scatter3d:autoseg']
+                                          'scatter3d:autofacet']
 
     _data_artist_cls = ScatterLayerArtist
     _subset_artist_cls = ScatterLayerArtist
