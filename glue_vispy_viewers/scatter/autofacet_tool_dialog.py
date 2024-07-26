@@ -108,7 +108,8 @@ class SegmentationToolDialog(QDialog):
                 elif isinstance(widget, QCheckBox):
                     self.params[key].value = widget.isChecked()
             except ValueError:
-                error_message = "Your value for the parameter {0} is not valid".format(self.schema[key].name)
+                error_message = "Your value for the parameter {0} is not valid"\
+                        .format(self.schema[key].name)
                 self.set_error_message(error_message)
                 return
 

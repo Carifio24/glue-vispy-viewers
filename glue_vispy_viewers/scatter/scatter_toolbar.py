@@ -4,7 +4,7 @@ import os
 import matplotlib.cm
 import numpy as np
 from qtpy.QtWidgets import QAction
-from sklearn.cluster import DBSCAN, HDBSCAN, OPTICS
+from sklearn.cluster import DBSCAN, HDBSCAN
 
 from glue.config import viewer_tool
 from glue.core.roi import Roi, Projected3dROI
@@ -15,7 +15,8 @@ from glue.utils import nonpartial
 from .autofacet_tool_dialog import SegmentationToolDialog
 from ..common.selection_tools import VispyMouseMode
 
-AUTOFACET_ICON = os.path.abspath(os.path.join(os.path.dirname(__file__), 'auto_seg_cloud_points.png'))
+AUTOFACET_ICON = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                              'auto_seg_cloud_points.png'))
 
 
 class NearestNeighborROI(Roi):
@@ -181,4 +182,3 @@ class AutoFacetTool(DropdownTool):
         if self.options["reverse_cmap"]:
             cmap = cmap.reversed()
         colorize_subsets(subsets, cmap)
-
