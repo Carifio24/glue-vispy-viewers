@@ -38,6 +38,7 @@
 
 
 from vispy.gloo import Texture3D, TextureEmulated3D, VertexBuffer, IndexBuffer
+from vispy.visuals.image import CPUScaledTexture2D, GPUScaledTexture2D
 from vispy.visuals.volume import VolumeVisual, Visual
 from vispy.scene.visuals import create_visual_node
 
@@ -289,6 +290,8 @@ class MultiIsoVisual(VolumeVisual):
                  emulate_texture=False):
         tex_cls = TextureEmulated3D if emulate_texture else Texture3D
 
+        self._texture = CPUScaledTexture2D()
+
         # Storage of information of volume
         self._vol_shape = ()
         self._clim = None
@@ -333,6 +336,7 @@ class MultiIsoVisual(VolumeVisual):
         self.set_gl_state('translucent', cull_face=False)
 
         # Set data
+        clim = clim or [0, 1]
         self.set_data(vol, clim)
 
         # Set params
@@ -341,6 +345,16 @@ class MultiIsoVisual(VolumeVisual):
         self.threshold = threshold if (threshold is not None) else vol.mean()
         self.step = step
         self.freeze()
+
+    def _prepare_transforms(self, view):
+        trs = view.transforms
+        view.view_program.vert['transform'] = trs.get_transform()
+
+        view_tr_f = trs.get_transform('visual', 'document')
+        view_tr_i = view_tr_f.inverse
+        view.view_program.vert['viewtransformf'] = view_tr_f
+        view.view_program.vert['viewtransformi'] = view_tr_i 
+
 
     @property
     def step(self):
