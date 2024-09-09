@@ -314,12 +314,12 @@ class MultiIsoVisual(VolumeVisual):
                 [0, 1, 1],
                 [1, 1, 1],
             ], dtype=np.float32))
-        self._tex = tex_cls((10, 10, 10), interpolation='linear',
+        self._texture = tex_cls((10, 10, 10), interpolation='linear',
                             wrapping='clamp_to_edge')
 
         # Create program
         Visual.__init__(self, vcode=VERT_SHADER, fcode=FRAG_SHADER)
-        self.shared_program['u_volumetex'] = self._tex
+        self.shared_program['u_volumetex'] = self._texture
         self.shared_program['a_position'] = self._vertices
         self.shared_program['a_texcoord'] = self._texcoord
         self.shared_program['u_threshold'] = threshold
@@ -355,5 +355,17 @@ class MultiIsoVisual(VolumeVisual):
             self.freeze()
         self.update()
 
+    def _prepare_transforms(self, view):
+
+        # Copied from VolumeVisual in vispy v0.8.1 as this was then chnaged
+        # in v0.9.0 in a way that breaks things.
+
+        trs = view.transforms
+        view.view_program.vert['transform'] = trs.get_transform()
+
+        view_tr_f = trs.get_transform('visual', 'document')
+        view_tr_i = view_tr_f.inverse
+        view.view_program.vert['viewtransformf'] = view_tr_f
+        view.view_program.vert['viewtransformi'] = view_tr_i
 
 MultiIsoVisual = create_visual_node(MultiIsoVisual)
