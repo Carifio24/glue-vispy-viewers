@@ -104,6 +104,8 @@ float rand(vec3 co) {{
     return fract(sin(sn) * c);
 }}
 
+{functions}
+
 void main() {{
     vec3 farpos = v_farpos.xyz / v_farpos.w;
     vec3 nearpos = v_nearpos.xyz / v_nearpos.w;
@@ -295,7 +297,8 @@ def get_frag_shader(volumes, clipped=False, n_volume_max=5):
     return FRAG_SHADER.format(declarations=declarations,
                               before_loop=before_loop,
                               in_loop=in_loop,
-                              after_loop=after_loop)
+                              after_loop=after_loop,
+                              functions="")
 
 
 def main():
