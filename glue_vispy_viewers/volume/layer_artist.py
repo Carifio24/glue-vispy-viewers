@@ -13,7 +13,7 @@ from .layer_state import VolumeLayerState
 from ..common.layer_artist import VispyLayerArtist
 
 
-COLOR_PROPERTIES = set(['cmap', 'color', 'color_mode'])
+COLOR_PROPERTIES = set(['cmap', 'color', 'color_mode', 'stretch'])
 
 
 class DataProxy(object):
@@ -159,13 +159,10 @@ class VolumeLayerArtist(VispyLayerArtist):
         PIXEL_CACHE.pop(self.id, None)
 
     def _update_cmap(self):
-        print(self.state.cmap)
         if self.state.color_mode == "Fixed":
-            cmap = get_translucent_cmap(*ColorConverter().to_rgb(self.state.color))
+            cmap = get_translucent_cmap(*ColorConverter().to_rgb(self.state.color), self.state.stretch_object)
         else:
-            cmap = get_mpl_cmap(self.state.cmap)
-
-        print(cmap)
+            cmap = get_mpl_cmap(self.state.cmap, self.state.stretch_object)
 
         self._multivol.set_cmap(self.id, cmap)
         self.redraw()
