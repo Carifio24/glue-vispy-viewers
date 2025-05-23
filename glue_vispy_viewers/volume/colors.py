@@ -60,7 +60,6 @@ def get_mpl_cmap(cmap, stretch):
 
     stretch_glsl = glsl_for_stretch(stretch)
     template = create_cmap_template(n_colors, stretch_glsl)
-    print(template)
 
     class MatplotlibCmap(BaseColormap):
         glsl_map = template
