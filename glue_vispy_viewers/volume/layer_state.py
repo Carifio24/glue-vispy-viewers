@@ -20,6 +20,7 @@ class VolumeLayerState(VispyLayerState, StretchStateMixin):
     vmax = CallbackProperty()
     color_mode = SelectionCallbackProperty()
     cmap = CallbackProperty()
+    reverse_cmap = CallbackProperty(False)
     subset_mode = CallbackProperty('data')
     _limits_cache = CallbackProperty({})
 

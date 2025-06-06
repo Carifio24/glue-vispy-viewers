@@ -64,8 +64,10 @@ class VolumeLayerStyleWidget(QtWidgets.QWidget):
             self.ui.color_color.show()
             self.ui.label_cmap.hide()
             self.ui.combodata_cmap.hide()
+            self.ui.bool_reverse_cmap.hide()
         else:
             self.ui.label_color.hide()
             self.ui.color_color.hide()
             self.ui.label_cmap.show()
             self.ui.combodata_cmap.show()
+            self.ui.bool_reverse_cmap.show()

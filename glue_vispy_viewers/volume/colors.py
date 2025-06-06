@@ -52,17 +52,22 @@ def get_translucent_cmap(r, g, b, stretch):
     return TranslucentCmap()
 
 
-def get_mpl_cmap(cmap, stretch):
+def get_mpl_cmap(cmap, stretch, reverse=False):
 
     if isinstance(cmap, ListedColormap):
         colors = cmap.colors
         n_colors = len(colors)
         ts = stretch([index / n_colors for index in range(len(colors))])
+        if reverse:
+            colors = list(reversed(colors))
         colors = [color + [t] for t, color in zip(ts, colors)]
     else:
         n_colors = 256
         ts = stretch([index / n_colors for index in range(n_colors)])
-        colors = [cmap(t)[:3] + (t,) for t in ts]
+        colors = [cmap(t)[:3] for t in ts]
+        if reverse:
+            colors = reversed(colors)
+        colors = [color + (t,) for t, color in zip(ts, colors)]
 
     stretch_glsl = glsl_for_stretch(stretch)
     template = create_cmap_template(n_colors, stretch_glsl)
