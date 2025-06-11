@@ -48,13 +48,32 @@ class DataProxy(object):
         if self.layer_artist is None or self.viewer_state is None:
             return np.broadcast_to(0, shape)
 
+        # For this method, we make use of Data.compute_fixed_resolution_buffer,
+        # which requires us to specify bounds in the form (min, max, nsteps).
+        # We also allow view to be passed here (which is a normal Numpy view)
+        # and, if given, translate it to bounds. If neither are specified,
+        # we behave as if view was [slice(None), slice(None), slice(None)].
+
+        def slice_to_bound(slc, size):
+            min, max, step = slc.indices(size)
+            n = (max - min - 1) // step
+            max = min + step * n
+            return (min, max, n + 1)
+
+        full_view, _agg_func = self.viewer_state.numpy_slice_aggregation
+
+        for i in range(self.viewer_state.reference_data.ndim):
+            if isinstance(full_view[i], slice):
+                full_view[i] = slice_to_bound(full_view[i], self.viewer_state.reference_data.shape[i])
+
         if isinstance(self.layer_artist.layer, Subset):
             try:
                 subset_state = self.layer_artist.layer.subset_state
                 result = self.layer_artist.layer.data.compute_fixed_resolution_buffer(
+                    full_view,
                     target_data=self.layer_artist._viewer_state.reference_data,
-                    bounds=bounds, subset_state=subset_state,
-                    cache_id=self.layer_artist.id)
+                    subset_state=subset_state,
+                    cache_id=None)
             except IncompatibleAttribute:
                 self.layer_artist.disable_incompatible_subset()
                 return np.broadcast_to(0, shape)
@@ -63,9 +82,10 @@ class DataProxy(object):
         else:
             try:
                 result = self.layer_artist.layer.compute_fixed_resolution_buffer(
+                    full_view,
                     target_data=self.layer_artist._viewer_state.reference_data,
-                    bounds=bounds, target_cid=self.layer_artist.state.attribute,
-                    cache_id=self.layer_artist.id)
+                    target_cid=self.layer_artist.state.attribute,
+                    cache_id=None)
             except IncompatibleAttribute:
                 self.layer_artist.disable('Layer data is not fully linked to reference data')
                 return np.broadcast_to(0, shape)
@@ -226,6 +246,8 @@ class VolumeLayerArtist(VispyLayerArtist):
         self._last_viewer_state.update(self._viewer_state.as_dict())
         self._last_layer_state.update(self.state.as_dict())
 
+        print("CHANGED: ", changed)
+
         if force or 'color' in changed:
             self._update_cmap_from_color()
 
@@ -235,7 +257,8 @@ class VolumeLayerArtist(VispyLayerArtist):
         if force or 'alpha' in changed:
             self._update_alpha()
 
-        if force or 'layer' in changed or 'attribute' in changed:
+        # TODO: Feel like we shouldn't need the axis atts here
+        if force or any(att in changed for att in ('layer', 'attribute', 'slices', 'x_att', 'y_att', 'z_att')):
             self._update_data()
 
         if force or 'subset_mode' in changed:
