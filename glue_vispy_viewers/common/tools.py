@@ -44,5 +44,11 @@ class RotateTool(Tool):
         else:
             self.timer.stop()
 
-    def rotate(self, event):
+    def rotate_z(self, event):
         self.viewer._vispy_widget.view.camera.azimuth -= 1.  # set speed as constant first
+
+    def rotate_y(self, event):
+        self.viewer._vispy_widget.view.camera.roll -= 1.  # set speed as constant first
+
+    def rotate_x(self, event):
+        self.viewer._vispy_widget.view.camera.elevation -= 1.  # set speed as constant first
