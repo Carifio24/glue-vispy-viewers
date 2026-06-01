@@ -162,13 +162,19 @@ def visual_test_jupyter(*args, **kwargs):
     """
 
     tolerance = kwargs.pop("tolerance", 0)
-    settle_ms = kwargs.pop("settle_ms", 2000)
+    # Initial settle wait before we start polling for the first frame.
+    settle_ms = kwargs.pop("settle_ms", 1000)
+    # Maximum extra time to spend waiting for jupyter_rfb to stream the
+    # first non-grey frame. Volume rendering (256^3 texture ray-march) is
+    # noticeably slower than scatter, and CI is slower than a laptop.
+    max_wait_ms = kwargs.pop("max_wait_ms", 15000)
 
     def decorator(test_function):
 
         @pytest.mark.mpl_image_compare(tolerance=tolerance, deterministic=True, **kwargs)
         @wraps(test_function)
         def wrapper(tmp_path, page_session, *a, **kw):
+            import time
             from IPython.display import display
             layout = test_function(tmp_path, page_session, *a, **kw)
             layout.add_class("test-viewer")
@@ -176,7 +182,22 @@ def visual_test_jupyter(*args, **kwargs):
             locator = page_session.locator(".test-viewer")
             locator.wait_for()
             page_session.wait_for_timeout(settle_ms)
+
+            # Poll until the screenshot is no longer the jupyter_rfb default
+            # grey "first frame pending" placeholder. The placeholder is
+            # uniformly (127, 127, 127) -- a real render has variance.
+            # Falls through after max_wait_ms even if still grey, so a
+            # broken pipeline still produces a comparable image.
+            start = time.monotonic()
             screenshot = locator.screenshot()
+            while (time.monotonic() - start) * 1000 < max_wait_ms:
+                rgb = Image.open(BytesIO(screenshot)).convert('RGB')
+                # Cheap variance check: a real render has lots of colour
+                # variation; the grey placeholder is near-uniform.
+                if rgb.getextrema()[0][1] - rgb.getextrema()[0][0] > 20:
+                    break
+                page_session.wait_for_timeout(500)
+                screenshot = locator.screenshot()
             # The test returns a widget, not the viewer, so we can't close
             # the viewer here. Invalidate the glue caches so the conftest
             # teardown check is satisfied; the viewer is GC'd shortly after.
