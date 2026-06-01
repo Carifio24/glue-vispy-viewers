@@ -67,7 +67,7 @@ jobs:
             pip install pip tox --upgrade
       - run: ssh-add -D
       - add_ssh_keys:
-          fingerprints: "CHANGE_ME_AFTER_ADDING_DEPLOY_KEY"
+          fingerprints: "SHA256:1gbSxMraK3ghcCSCkgQXCKSFiPI9LqLaBhEPhoQ1/Qg"
       - run: ssh-keyscan github.com >> ~/.ssh/known_hosts
       - run: git config --global user.email "glue@circleci" && git config --global user.name "Glue Circle CI"
       - run: git clone git@github.com:glue-viz/glue-vispy-viewers-visual-tests.git --depth 1 ~/glue-vispy-viewers-visual-tests/
