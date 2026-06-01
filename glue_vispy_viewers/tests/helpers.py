@@ -168,6 +168,13 @@ def visual_test_jupyter(*args, **kwargs):
     # first non-grey frame. Volume rendering (256^3 texture ray-march) is
     # noticeably slower than scatter, and CI is slower than a laptop.
     max_wait_ms = kwargs.pop("max_wait_ms", 15000)
+    # After the heuristic first says the frame has arrived, keep polling
+    # until two consecutive screenshots are byte-identical (the canvas
+    # has stopped repainting), or this hard cap elapses. Catches the case
+    # where the render passes the "not grey anymore" check while still
+    # mid-stream and the screenshot captures a partial paint.
+    stable_wait_ms = kwargs.pop("stable_wait_ms", 5000)
+    stable_poll_ms = kwargs.pop("stable_poll_ms", 250)
 
     def decorator(test_function):
 
@@ -214,6 +221,24 @@ def visual_test_jupyter(*args, **kwargs):
                    and (time.monotonic() - start) * 1000 < max_wait_ms):
                 page_session.wait_for_timeout(500)
                 screenshot = locator.screenshot()
+
+            # The "non-grey" heuristic only catches the transition out of
+            # the placeholder -- the canvas can still be mid-paint when it
+            # passes (e.g. axis labels arrive a few frames after the data
+            # markers). Re-screenshot until two successive captures are
+            # byte-identical, meaning the canvas has stopped updating.
+            # Capped so a continuously-animating canvas can't hang the
+            # test forever.
+            stable_start = time.monotonic()
+            previous = screenshot
+            page_session.wait_for_timeout(stable_poll_ms)
+            screenshot = locator.screenshot()
+            while (screenshot != previous
+                   and (time.monotonic() - stable_start) * 1000 < stable_wait_ms):
+                previous = screenshot
+                page_session.wait_for_timeout(stable_poll_ms)
+                screenshot = locator.screenshot()
+
             # The test returns a widget, not the viewer, so we can't close
             # the viewer here. Invalidate the glue caches so the conftest
             # teardown check is satisfied; the viewer is GC'd shortly after.
