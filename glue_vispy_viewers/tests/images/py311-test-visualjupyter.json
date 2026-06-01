@@ -1,3 +1,3 @@
 {
-    "glue_vispy_viewers.volume.jupyter.tests.test_visual.test_visual_volume3d_jupyter[chromium]": "7344dfe65e6a30bd4d49a39a0047ae201fa60ed694478f491c19073ae1d2dd64"
+    "glue_vispy_viewers.scatter.jupyter.tests.test_visual.test_visual_scatter3d_jupyter[chromium]": "bd4a9028fb50ae54f7b919ca3129c803fbc1482b2ea90110b117aaf86c372cd0"
 }
