@@ -183,19 +183,35 @@ def visual_test_jupyter(*args, **kwargs):
             locator.wait_for()
             page_session.wait_for_timeout(settle_ms)
 
-            # Poll until the screenshot is no longer the jupyter_rfb default
-            # grey "first frame pending" placeholder. The placeholder is
-            # uniformly (127, 127, 127) -- a real render has variance.
+            # Poll until the canvas has streamed a real frame rather than
+            # the jupyter_rfb "first frame pending" placeholder (a uniform
+            # grey (127, 127, 127) fill). A real render has lots of colour
+            # variation; the placeholder is near-uniform.
+            #
+            # The check must inspect only the *interior* of the screenshot:
+            # the wrapping widget always contributes a handful of non-grey
+            # chrome/border pixels, so a variance check over the full image
+            # is satisfied on the very first poll -- the loop would exit
+            # before the canvas has actually painted and capture the grey
+            # placeholder. Cropping away the chrome makes the check reflect
+            # the canvas content alone, so the loop genuinely waits for the
+            # streamed frame. This matters on a cold/slow CI runner, where
+            # the first frame can arrive later than ``settle_ms``.
+            #
             # Falls through after max_wait_ms even if still grey, so a
             # broken pipeline still produces a comparable image.
+            def _frame_rendered(png_bytes):
+                rgb = Image.open(BytesIO(png_bytes)).convert('RGB')
+                width, height = rgb.size
+                interior = rgb.crop((width // 4, height // 4,
+                                     3 * width // 4, 3 * height // 4))
+                low, high = interior.getextrema()[0]
+                return high - low > 20
+
             start = time.monotonic()
             screenshot = locator.screenshot()
-            while (time.monotonic() - start) * 1000 < max_wait_ms:
-                rgb = Image.open(BytesIO(screenshot)).convert('RGB')
-                # Cheap variance check: a real render has lots of colour
-                # variation; the grey placeholder is near-uniform.
-                if rgb.getextrema()[0][1] - rgb.getextrema()[0][0] > 20:
-                    break
+            while (not _frame_rendered(screenshot)
+                   and (time.monotonic() - start) * 1000 < max_wait_ms):
                 page_session.wait_for_timeout(500)
                 screenshot = locator.screenshot()
             # The test returns a widget, not the viewer, so we can't close
