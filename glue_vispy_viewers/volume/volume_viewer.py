@@ -53,8 +53,10 @@ class VispyVolumeViewerMixin(BaseVispyViewerMixin):
         self._update_resolution()
 
         # Line visual outlining where the cutting plane meets the box.
+        # 50% grey reads as roughly half the contrast of the foreground-coloured
+        # bounding box on either a black or a white background.
         self._cut_outline = Line(pos=np.zeros((2, 3), dtype=np.float32),
-                                 color=Color(settings.FOREGROUND_COLOR),
+                                 color=Color((0.5, 0.5, 0.5)),
                                  width=2, connect='strip')
         self._cut_outline.visible = False
         self._vispy_widget.add_data_visual(self._cut_outline)
@@ -74,8 +76,7 @@ class VispyVolumeViewerMixin(BaseVispyViewerMixin):
         else:
             # Close the polygon with connect='strip' by repeating the first vertex.
             closed = np.vstack([polygon, polygon[:1]]).astype(np.float32)
-            self._cut_outline.set_data(pos=closed,
-                                       color=Color(settings.FOREGROUND_COLOR))
+            self._cut_outline.set_data(pos=closed, color=Color((0.5, 0.5, 0.5)))
             self._cut_outline.visible = True
         self._vispy_widget.canvas.update()
 
