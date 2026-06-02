@@ -67,7 +67,8 @@ class Vispy3DVolumeViewerState(VolumeViewerState3D):
         2, choices=['X', 'Y', 'Z'],
         docstring='Axis perpendicular to the cutting plane in Simple mode.')
     cut_tilt = CallbackProperty(0.0, docstring='Polar angle of the plane normal, radians (0..pi).')
-    cut_rotation = CallbackProperty(0.0, docstring='Azimuthal angle of the plane normal, radians (0..2*pi).')
+    cut_rotation = CallbackProperty(
+        0.0, docstring='Azimuthal angle of the plane normal, radians (0..2*pi).')
     cut_depth = CallbackProperty(0.5, docstring='Depth of the cut, 0 (no cut) to 1 (full cut).')
 
     def __init__(self, **kwargs):

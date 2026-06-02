@@ -1,7 +1,7 @@
 import numpy as np
 
 from ..viewer_state import (Vispy3DVolumeViewerState, cutting_plane_from_state,
-                            _CUBE_CENTER, _CUBE_HALF_DIAGONAL)
+                            _CUBE_CENTER)
 
 
 def test_default_disabled():
