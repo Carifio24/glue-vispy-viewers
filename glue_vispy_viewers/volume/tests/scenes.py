@@ -115,14 +115,13 @@ def volume_clip_off(viewer):
 def volume_cutting_plane(viewer):
     """L1448 with a plasma colormap and a tilted top cutting plane.
 
-    The plane is set to ``ax + by + cz + d = 0`` with ``(a, b, c, d) =
-    (0, 0.5, 1, -180)``: a roughly horizontal cut tilted along the
-    depth axis. The camera is rotated 180 degrees around the z-axis
-    from its default azimuth so the cut surface faces the viewer.
-    Roughly half the volume is removed, leaving the bright L1448 cloud
-    sliced open from above. Used to verify that the cutting plane
-    uniforms reach the GPU and that the enabled/disabled toggle path
-    is wired up.
+    Exercises the advanced-mode cutting plane controls. The chosen
+    ``cut_tilt``/``cut_rotation``/``cut_depth`` reproduce the shader
+    plane ``0.5 y + z = 180`` (in 0..256 v_position coordinates), a
+    roughly horizontal cut tilted along the depth axis. The camera is
+    rotated 180 degrees around the z-axis from its default azimuth so
+    the cut surface faces the viewer. Roughly half the volume is
+    removed, leaving the bright L1448 cloud sliced open from above.
     """
     import matplotlib.pyplot as plt
     layer = viewer.state.layers[0]
@@ -131,7 +130,14 @@ def volume_cutting_plane(viewer):
     layer.cmap = plt.cm.plasma
     layer.v_min = -0.7
     layer.v_max = 2.74
-    viewer.state.cutting_plane = (0.0, 0.5, 1.0, -180.0)
+    viewer.state.cut_enabled = True
+    viewer.state.cut_mode = 'Advanced'
+    # arccos(1/sqrt(1.25)) and pi/2 give the unit normal (0, 0.447, 0.894);
+    # cut_depth places the plane just past the cube centre on the +normal side.
+    import numpy as np
+    viewer.state.cut_tilt = float(np.arccos(1.0 / np.sqrt(1.25)))
+    viewer.state.cut_rotation = float(np.pi / 2)
+    viewer.state.cut_depth = 0.524088
     viewer._vispy_widget.view.camera.azimuth += 180
 
 

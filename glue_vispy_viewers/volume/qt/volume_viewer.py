@@ -6,6 +6,7 @@ from qtpy.QtCore import QTimer
 
 from ...common.qt.data_viewer import BaseVispyViewer
 from .layer_style_widget import VolumeLayerStyleWidget
+from .viewer_options import VolumeOptionsWidget
 
 from glue.viewers.volume3d.layer_state import VolumeLayerState3D
 
@@ -17,6 +18,8 @@ from ...scatter.qt.layer_style_widget import ScatterLayerStyleWidget
 
 
 class VispyVolumeViewer(VispyVolumeViewerMixin, BaseVispyViewer):
+
+    _options_cls = VolumeOptionsWidget
 
     _layer_style_widget_cls = {VolumeLayerArtist: VolumeLayerStyleWidget,
                                ScatterLayerArtist: ScatterLayerStyleWidget}

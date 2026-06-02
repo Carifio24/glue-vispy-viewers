@@ -23,4 +23,8 @@ class Volume3DViewerStateWidget(v.VuetifyTemplate):
         self.slice_helper = MultiSliceWidgetHelper(viewer_state)
         self.widget_slices = self.slice_helper.layout
 
-        autoconnect_callbacks_to_vue(viewer_state, self, extras={"resolution": "selection"})
+        autoconnect_callbacks_to_vue(viewer_state, self, extras={
+            "resolution": "selection",
+            "cut_mode": "selection",
+            "cut_axis": "selection",
+        })

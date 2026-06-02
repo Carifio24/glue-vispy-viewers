@@ -3,7 +3,7 @@ import numpy as np
 
 from glue.config import settings
 from glue.viewers.common.viewer import Viewer
-from .viewer_state import Vispy3DVolumeViewerState
+from .viewer_state import Vispy3DVolumeViewerState, cutting_plane_from_state
 
 from ..common.vispy_data_viewer import BaseVispyViewerMixin
 from .layer_artist import VolumeLayerArtist
@@ -49,11 +49,14 @@ class VispyVolumeViewerMixin(BaseVispyViewerMixin):
         self.state.add_callback('resolution', self._update_resolution)
         self._update_resolution()
 
-        self.state.add_callback('cutting_plane', self._update_cutting_plane)
+        for attr in ('cut_enabled', 'cut_mode', 'cut_axis',
+                     'cut_tilt', 'cut_rotation', 'cut_depth'):
+            self.state.add_callback(attr, self._update_cutting_plane)
         self._update_cutting_plane()
 
     def _update_cutting_plane(self, *args):
-        self._vispy_widget._multivol.set_cutting_plane(self.state.cutting_plane)
+        plane = cutting_plane_from_state(self.state)
+        self._vispy_widget._multivol.set_cutting_plane(plane)
         self._vispy_widget.canvas.update()
 
     def _update_clip(self, force=False):
