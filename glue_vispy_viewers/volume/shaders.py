@@ -276,9 +276,12 @@ void main() {{
 
         if (plane_count > 0.) {{
             plane_total_color /= plane_count;
-            float a = u_cut_plane_image_opacity * plane_max_alpha;
-            // Composite over the existing total_color (which is already blended
-            // against the background or fully transparent).
+            // Use the slider value directly as the final alpha so that at
+            // opacity = 1.0 the slice fully covers the volume behind it.
+            // ``plane_count > 0`` is enough to gate the overlay against
+            // empty data points; weighting by the per-layer alpha here
+            // would let layer.alpha < 1 cap the maximum opacity.
+            float a = u_cut_plane_image_opacity;
             total_color.rgb = mix(total_color.rgb, plane_total_color.rgb, a);
             total_color.a = max(total_color.a, a);
         }}
