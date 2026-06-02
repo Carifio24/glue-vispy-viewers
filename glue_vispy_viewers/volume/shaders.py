@@ -129,21 +129,41 @@ void main() {{
     distance = max(distance, min((-0.5 - v_position.z) / view_ray.z,
                             (u_shape.z - 0.5 - v_position.z) / view_ray.z));
 
-    // If a cutting plane is set, push the front surface forward to it
+    // Restrict the sampling segment to the "kept" side of the cutting plane.
+    // The kept side is defined in volume coordinates as
+    //     dot(p, u_cutting_plane_abc) + u_cutting_plane_d < 0
+    // i.e. the half-space opposite the plane normal. Defining the kept side
+    // this way (rather than implicitly via the ray direction) makes the
+    // result invariant under camera rotation: rotating the view shows the
+    // same kept material from a different angle, rather than flipping which
+    // material is visible.
+    float exit_distance = 0.0;
     if (u_cutting_plane_enabled == 1) {{
-        float cutting_distance = -(dot(v_position, u_cutting_plane_abc) + u_cutting_plane_d) / dot(view_ray, u_cutting_plane_abc);
-        distance = max(distance, cutting_distance);
+        float v0 = dot(v_position, u_cutting_plane_abc) + u_cutting_plane_d;
+        float vdir = dot(view_ray, u_cutting_plane_abc);
+        if (abs(vdir) < 1e-6) {{
+            if (v0 > 0.0) discard;
+        }} else {{
+            float t_plane = -v0 / vdir;
+            if (vdir > 0.0) {{
+                exit_distance = min(exit_distance, t_plane);
+            }} else {{
+                distance = max(distance, t_plane);
+            }}
+        }}
     }}
+    if (exit_distance <= distance) discard;
 
     // Now we have the starting position on the front surface
     vec3 front = v_position + view_ray * distance;
+    vec3 back = v_position + view_ray * exit_distance;
 
     // Decide how many steps to take
-    int nsteps = int(-distance / u_downsample + 0.5);
+    int nsteps = int((exit_distance - distance) / u_downsample + 0.5);
     if(nsteps < 1) discard;
 
     // Get starting location and step vector in texture coordinates
-    vec3 step = ((v_position - front) / u_shape) / nsteps;
+    vec3 step = ((back - front) / u_shape) / nsteps;
     vec3 start_loc = front / u_shape;
 
     float val;
