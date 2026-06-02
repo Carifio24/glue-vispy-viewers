@@ -112,6 +112,26 @@ def volume_clip_off(viewer):
     viewer.state.clip_data = False
 
 
+def volume_cutting_plane(viewer):
+    """L1448 with a plasma colormap and a diagonal cutting plane.
+
+    The plane is set to ``ax + by + cz + d = 0`` with ``(a, b, c, d) =
+    (1, 1, 0, -80)``, which slices the cube diagonally across the
+    velocity/x axis. The render should show roughly half the cube
+    revealed; setting ``cutting_plane=None`` and re-rendering would
+    bring the rest back. Used to verify that the cutting-plane uniforms
+    reach the GPU and that the disabled/enabled toggle path is wired up.
+    """
+    import matplotlib.pyplot as plt
+    layer = viewer.state.layers[0]
+    layer.alpha = 1.0
+    layer.color_mode = 'Linear'
+    layer.cmap = plt.cm.plasma
+    layer.v_min = -0.7
+    layer.v_max = 2.74
+    viewer.state.cutting_plane = (1.0, 1.0, 0.0, -80.0)
+
+
 def volume_with_scatter_overlay(app, viewer, vol_data, scatter_data):
     """Volume rendering with a 1D scatter overlay."""
     basic_volume(viewer)

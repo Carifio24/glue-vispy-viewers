@@ -43,6 +43,18 @@ def test_visual_volume3d_native_aspect():
 
 
 @visual_test(tolerance=5)
+def test_visual_volume3d_cutting_plane():
+    # Exercises the cutting plane uniforms via the L1448 cube. Sets a
+    # diagonal cut so a render with the plane disabled (or with the
+    # uniforms wrong) would look obviously different from the baseline.
+    with inverted_glue_colors():
+        data = scenes.l1448_data()
+        _, viewer = _make_viewer(data)
+        scenes.volume_cutting_plane(viewer)
+        return viewer
+
+
+@visual_test(tolerance=5)
 def test_visual_volume3d_subset():
     data = scenes.blob_data()
     app, viewer = _make_viewer(data)

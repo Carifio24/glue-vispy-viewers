@@ -80,7 +80,11 @@ varying vec3 v_position;
 varying vec4 v_nearpos;
 varying vec4 v_farpos;
 
-// A cutting plane defined as ax + by + cz + d = 0 where the vector below is (a, b, c)
+// A cutting plane defined as ax + by + cz + d = 0 where the vector below is (a, b, c).
+// u_cutting_plane_enabled is a 0/1 flag so we can skip the computation (and avoid
+// the division-by-zero that happens when a ray is parallel to the plane) when no
+// cut is set.
+uniform int u_cutting_plane_enabled;
 uniform vec3 u_cutting_plane_abc;
 uniform float u_cutting_plane_d;
 
@@ -125,9 +129,11 @@ void main() {{
     distance = max(distance, min((-0.5 - v_position.z) / view_ray.z,
                             (u_shape.z - 0.5 - v_position.z) / view_ray.z));
 
-    // Compute distance to cutting plane
-    float cutting_distance = -(dot(v_position, u_cutting_plane_abc) + u_cutting_plane_d) / dot(view_ray, u_cutting_plane_abc);
-    distance = max(distance, cutting_distance);
+    // If a cutting plane is set, push the front surface forward to it
+    if (u_cutting_plane_enabled == 1) {{
+        float cutting_distance = -(dot(v_position, u_cutting_plane_abc) + u_cutting_plane_d) / dot(view_ray, u_cutting_plane_abc);
+        distance = max(distance, cutting_distance);
+    }}
 
     // Now we have the starting position on the front surface
     vec3 front = v_position + view_ray * distance;

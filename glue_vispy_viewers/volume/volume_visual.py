@@ -215,11 +215,14 @@ class MultiVolumeVisual(VolumeVisual):
 
     def set_cutting_plane(self, parameters):
         if parameters is None:
-            # Plane far enough behind the volume that no fragment is
-            # ever excluded; effectively disables the cut.
+            # Flag the shader to skip the cutting-plane code path entirely.
+            # The abc/d uniforms still need *some* value bound or vispy
+            # will complain at draw time, but it doesn't matter what.
+            self.shared_program['u_cutting_plane_enabled'] = 0
             self.shared_program['u_cutting_plane_abc'] = [0, 0, 1]
-            self.shared_program['u_cutting_plane_d'] = -10000.
+            self.shared_program['u_cutting_plane_d'] = 0.
         else:
+            self.shared_program['u_cutting_plane_enabled'] = 1
             self.shared_program['u_cutting_plane_abc'] = list(parameters[:3])
             self.shared_program['u_cutting_plane_d'] = float(parameters[3])
 
