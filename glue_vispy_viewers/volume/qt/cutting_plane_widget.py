@@ -32,6 +32,7 @@ class CuttingPlaneWidget(QtWidgets.QWidget):
             'value_cut_tilt': dict(value_range=(0.0, np.pi)),
             'value_cut_rotation': dict(value_range=(0.0, 2.0 * np.pi)),
             'value_cut_depth': dict(value_range=(0.0, 1.0)),
+            'value_cut_plane_image_opacity': dict(value_range=(0.0, 1.0)),
         }
         self._connections = autoconnect_callbacks_to_qt(
             self.state, self.ui, connect_kwargs)
@@ -71,7 +72,7 @@ class CuttingPlaneWidget(QtWidgets.QWidget):
         on = bool(self.state.cut_enabled)
         for w in (self.ui.mode_row, self.ui.simple_box,
                   self.ui.advanced_box, self.ui.depth_box,
-                  self.ui.button_flip_cut):
+                  self.ui.image_box, self.ui.button_flip_cut):
             w.setEnabled(on)
 
     def _on_mode_change(self, *args):

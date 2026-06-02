@@ -88,6 +88,12 @@ uniform int u_cutting_plane_enabled;
 uniform vec3 u_cutting_plane_abc;
 uniform float u_cutting_plane_d;
 
+// Opacity of the slice image rendered on the cut surface; 0 disables it.
+// The image is only drawn when the camera sits on the +normal side of the
+// plane (i.e. the side that has been removed by the cut), so it appears on
+// the visible face of the remaining volume rather than hiding behind it.
+uniform float u_cut_plane_image_opacity;
+
 // uniforms for lighting. Hard coded until we figure out how to do lights
 const vec4 u_ambient = vec4(0.2, 0.4, 0.2, 1.0);
 const vec4 u_diffuse = vec4(0.8, 0.2, 0.2, 1.0);
@@ -138,7 +144,10 @@ void main() {{
     // same kept material from a different angle, rather than flipping which
     // material is visible.
     float exit_distance = 0.0;
+    float plane_t = 0.0;          // ray parameter where the cutting plane crosses, if any
+    int plane_image_visible = 0;  // whether the cut-surface image should be drawn
     if (u_cutting_plane_enabled == 1) {{
+        float original_distance = distance;
         float v0 = dot(v_position, u_cutting_plane_abc) + u_cutting_plane_d;
         float vdir = dot(view_ray, u_cutting_plane_abc);
         if (abs(vdir) < 1e-6) {{
@@ -149,6 +158,17 @@ void main() {{
                 exit_distance = min(exit_distance, t_plane);
             }} else {{
                 distance = max(distance, t_plane);
+            }}
+            // The plane image is meaningful only where the plane actually
+            // crosses this ray inside the cube, AND the camera is on the
+            // removed side -- otherwise the plane sits behind the volume
+            // material from the viewer's perspective and shouldn't show.
+            if (t_plane > original_distance && t_plane < 0.0) {{
+                float q_camera = dot(nearpos, u_cutting_plane_abc) + u_cutting_plane_d;
+                if (q_camera > 0.0) {{
+                    plane_t = t_plane;
+                    plane_image_visible = 1;
+                }}
             }}
         }}
     }}
@@ -240,6 +260,30 @@ void main() {{
 
     }}
 
+    // Cut-surface image overlay. Samples each layer once at the plane intersection,
+    // colormaps it through the layer's own colormap function (so colormap, v_min,
+    // v_max and subset multiply are reused for free), then composites the result
+    // over the MIP result at the user-controlled opacity.
+    if (u_cut_plane_image_opacity > 0.0 && plane_image_visible == 1) {{
+        vec3 plane_loc = (v_position + view_ray * plane_t) / u_shape;
+        vec4 plane_total_color = vec4(0., 0., 0., 0.);
+        vec4 plane_color = vec4(0., 0., 0., 0.);
+        float plane_count = 0.;
+        float plane_max_alpha = 0.;
+        float plane_val;
+
+        {plane_sample}
+
+        if (plane_count > 0.) {{
+            plane_total_color /= plane_count;
+            float a = u_cut_plane_image_opacity * plane_max_alpha;
+            // Composite over the existing total_color (which is already blended
+            // against the background or fully transparent).
+            total_color.rgb = mix(total_color.rgb, plane_total_color.rgb, a);
+            total_color.a = max(total_color.a, a);
+        }}
+    }}
+
     gl_FragColor = total_color;
 
     /* Set depth value - from visvis TODO
@@ -266,6 +310,7 @@ def get_frag_shader(volumes, clipped=False, n_volume_max=5):
     before_loop = ""
     in_loop = ""
     after_loop = ""
+    plane_sample = ""
 
     for index in range(n_volume_max):
         declarations += "uniform $sampler_type u_volumetex_{0:d};\n".format(index)
@@ -318,6 +363,27 @@ def get_frag_shader(volumes, clipped=False, n_volume_max=5):
                        "max_alpha = max(color.a, max_alpha);\n"
                        "count += color.a;\n\n").format(index)
 
+        # Single sample on the cutting plane for the slice-image overlay.
+        plane_sample += "if(u_enabled_{0:d} == 1) {{\n\n".format(index)
+        if clipped:
+            plane_sample += ("if(plane_loc.r > u_clip_min.r && plane_loc.r < u_clip_max.r &&\n"
+                             "   plane_loc.g > u_clip_min.g && plane_loc.g < u_clip_max.g &&\n"
+                             "   plane_loc.b > u_clip_min.b && plane_loc.b < u_clip_max.b) {\n\n")
+        plane_sample += "plane_val = $sample(u_volumetex_{0:d}, plane_loc).g;\n".format(index)
+        if volumes[label].get('multiply') is not None:
+            index_other = volumes[volumes[label]['multiply']]['index']
+            plane_sample += (
+                "if (plane_val != 0) {{ plane_val *= $sample(u_volumetex_{0:d}, plane_loc).g; }}\n"
+                .format(index_other))
+        plane_sample += "plane_color = $cmap{0:d}(plane_val);\n".format(index)
+        plane_sample += "plane_color.a *= u_weight_{0:d};\n".format(index)
+        plane_sample += "plane_total_color += plane_color.a * plane_color;\n"
+        plane_sample += "plane_max_alpha = max(plane_color.a, plane_max_alpha);\n"
+        plane_sample += "plane_count += plane_color.a;\n\n"
+        if clipped:
+            plane_sample += "}\n\n"
+        plane_sample += "}\n\n"
+
     if not clipped:
         before_loop += "\nfloat val3 = u_clip_min.g + u_clip_max.g;\n\n"
 
@@ -325,11 +391,13 @@ def get_frag_shader(volumes, clipped=False, n_volume_max=5):
     before_loop = indent(before_loop, " " * 4).strip()
     in_loop = indent(in_loop, " " * 16).strip()
     after_loop = indent(after_loop, " " * 4).strip()
+    plane_sample = indent(plane_sample, " " * 8).strip()
 
     return FRAG_SHADER.format(declarations=declarations,
                               before_loop=before_loop,
                               in_loop=in_loop,
-                              after_loop=after_loop)
+                              after_loop=after_loop,
+                              plane_sample=plane_sample)
 
 
 def main():

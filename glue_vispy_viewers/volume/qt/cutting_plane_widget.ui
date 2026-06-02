@@ -157,6 +157,25 @@
     </widget>
    </item>
    <item>
+    <widget class="QGroupBox" name="image_box">
+     <property name="title">
+      <string>Plane image opacity</string>
+     </property>
+     <layout class="QVBoxLayout" name="image_layout">
+      <item>
+       <widget class="QSlider" name="value_cut_plane_image_opacity">
+        <property name="maximum">
+         <number>1000</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
     <widget class="QPushButton" name="button_flip_cut">
      <property name="text">
       <string>Flip shown/clipped side</string>

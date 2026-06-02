@@ -165,6 +165,8 @@ class Vispy3DVolumeViewerState(VolumeViewerState3D):
     cut_depth = CallbackProperty(0.5, docstring='Depth of the cut, 0 (no cut) to 1 (full cut).')
     cut_flip = CallbackProperty(
         False, docstring='Whether to show the opposite side of the cutting plane.')
+    cut_plane_image_opacity = CallbackProperty(
+        0.0, docstring='Opacity of the slice image rendered on the cutting plane (0 = off).')
 
     def flip_cut(self):
         """Swap which side of the cutting plane is shown versus clipped.
