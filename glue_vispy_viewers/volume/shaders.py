@@ -276,11 +276,13 @@ void main() {{
 
         if (plane_count > 0.) {{
             plane_total_color /= plane_count;
-            // Use the slider value directly as the final alpha so that at
-            // opacity = 1.0 the slice fully covers the volume behind it.
-            // ``plane_count > 0`` is enough to gate the overlay against
-            // empty data points; weighting by the per-layer alpha here
-            // would let layer.alpha < 1 cap the maximum opacity.
+            // Premultiply rgb by the sampled colormap alpha so that Fixed-colour
+            // layers (which encode data only in alpha) still show data variation
+            // as brightness on the slice; Linear-mode layers have alpha == 1 in
+            // their visible range, so this leaves them at full intensity.
+            plane_total_color.rgb *= plane_total_color.a;
+            // The slider value is the final overlay alpha so that at
+            // opacity == 1 the slice fully covers the volume behind it.
             float a = u_cut_plane_image_opacity;
             total_color.rgb = mix(total_color.rgb, plane_total_color.rgb, a);
             total_color.a = max(total_color.a, a);
@@ -378,8 +380,12 @@ def get_frag_shader(volumes, clipped=False, n_volume_max=5):
             plane_sample += (
                 "if (plane_val != 0) {{ plane_val *= $sample(u_volumetex_{0:d}, plane_loc).g; }}\n"
                 .format(index_other))
+        # Note: we deliberately don't multiply by u_weight_N for the slice
+        # sample. The MIP layer weight is a "how much does this layer fade
+        # into the rest" knob meant for the volume render; the slice already
+        # has the user's opacity slider for that, and pulling u_weight in
+        # would dim Linear-mode slices.
         plane_sample += "plane_color = $cmap{0:d}(plane_val);\n".format(index)
-        plane_sample += "plane_color.a *= u_weight_{0:d};\n".format(index)
         plane_sample += "plane_total_color += plane_color.a * plane_color;\n"
         plane_sample += "plane_max_alpha = max(plane_color.a, plane_max_alpha);\n"
         plane_sample += "plane_count += plane_color.a;\n\n"
