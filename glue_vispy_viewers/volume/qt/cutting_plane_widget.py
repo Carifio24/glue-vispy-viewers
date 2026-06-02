@@ -60,15 +60,18 @@ class CuttingPlaneWidget(QtWidgets.QWidget):
             simple_layout.addWidget(w)
         layout.addWidget(self._simple_box)
 
-        # Advanced-mode angle sliders
+        # Advanced-mode angle sliders -- subheader-above-slider layout so
+        # each slider gets the full widget width.
         self._advanced_box = QtWidgets.QGroupBox('Orientation')
-        adv_layout = QtWidgets.QFormLayout(self._advanced_box)
+        adv_layout = QtWidgets.QVBoxLayout(self._advanced_box)
+        adv_layout.addWidget(QtWidgets.QLabel('Tilt'))
         self.value_cut_tilt = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.value_cut_tilt.setRange(0, 180)
+        adv_layout.addWidget(self.value_cut_tilt)
+        adv_layout.addWidget(QtWidgets.QLabel('Rotation'))
         self.value_cut_rotation = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.value_cut_rotation.setRange(0, 360)
-        adv_layout.addRow('Tilt', self.value_cut_tilt)
-        adv_layout.addRow('Rotation', self.value_cut_rotation)
+        adv_layout.addWidget(self.value_cut_rotation)
         layout.addWidget(self._advanced_box)
 
         # Depth slider
