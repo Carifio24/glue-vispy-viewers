@@ -3,7 +3,10 @@ import numpy as np
 
 from glue.config import settings
 from glue.viewers.common.viewer import Viewer
-from glue.viewers.volume3d.viewer_state import VolumeViewerState3D as Vispy3DVolumeViewerState
+from vispy.scene.visuals import Line
+from vispy.color import Color
+from .viewer_state import (Vispy3DVolumeViewerState, cutting_plane_from_state,
+                           cutting_plane_polygon)
 
 from ..common.vispy_data_viewer import BaseVispyViewerMixin
 from .layer_artist import VolumeLayerArtist
@@ -13,6 +16,12 @@ from .volume_visual import MultiVolume
 
 from ..common import tools as _tools, selection_tools  # noqa
 from . import volume_toolbar  # noqa
+
+
+# Colour of the cutting-plane outline. 50% grey reads as roughly half the
+# contrast of the foreground-coloured bounding box on either a black or a
+# white background.
+GRAY = (0.5, 0.5, 0.5)
 
 
 class VispyVolumeViewerMixin(BaseVispyViewerMixin):
@@ -49,6 +58,53 @@ class VispyVolumeViewerMixin(BaseVispyViewerMixin):
         self.state.add_callback('resolution', self._update_resolution)
         self._update_resolution()
 
+        # Line visual outlining where the cutting plane meets the box.
+        self._cut_outline = Line(pos=np.zeros((2, 3), dtype=np.float32),
+                                 color=Color(GRAY),
+                                 width=2, connect='strip')
+        self._cut_outline.visible = False
+        self._vispy_widget.add_data_visual(self._cut_outline)
+
+        for attr in ('cut_enabled', 'cut_mode', 'cut_axis',
+                     'cut_tilt', 'cut_rotation', 'cut_depth', 'cut_flip',
+                     'resolution',
+                     'x_min', 'x_max', 'y_min', 'y_max', 'z_min', 'z_max'):
+            self.state.add_callback(attr, self._update_cutting_plane)
+        self._update_cutting_plane()
+
+        # The volume texture is only re-sliced lazily (on att/resolution
+        # changes), so flipping an axis limit would otherwise leave it stale
+        # until the next camera move. Re-slice immediately when an axis
+        # orientation flips so the cutting plane stays consistent right away.
+        for attr in ('x_min', 'x_max', 'y_min', 'y_max', 'z_min', 'z_max'):
+            self.state.add_callback(attr, self._resample_on_axis_flip)
+
+    def _resample_on_axis_flip(self, *args):
+        bounds = self._vispy_widget._multivol._data_bounds
+        if bounds is None:
+            return
+        # _data_bounds is ordered (z, y, x); compare each axis orientation
+        # (sign of max - min) against the limits the texture was sampled with.
+        (z_lo, z_hi, _), (y_lo, y_hi, _), (x_lo, x_hi, _) = bounds
+        flipped = ((self.state.x_max - self.state.x_min) * (x_hi - x_lo) < 0 or
+                   (self.state.y_max - self.state.y_min) * (y_hi - y_lo) < 0 or
+                   (self.state.z_max - self.state.z_min) * (z_hi - z_lo) < 0)
+        if flipped:
+            self._update_slice_transform()
+
+    def _update_cutting_plane(self, *args):
+        plane = cutting_plane_from_state(self.state)
+        self._vispy_widget._multivol.set_cutting_plane(plane)
+        polygon = cutting_plane_polygon(self.state)
+        if polygon is None or len(polygon) < 3:
+            self._cut_outline.visible = False
+        else:
+            # Close the polygon with connect='strip' by repeating the first vertex.
+            closed = np.vstack([polygon, polygon[:1]]).astype(np.float32)
+            self._cut_outline.set_data(pos=closed, color=Color(GRAY))
+            self._cut_outline.visible = True
+        self._vispy_widget.canvas.update()
+
     def _update_clip(self, force=False):
         if hasattr(self._vispy_widget, '_multivol'):
             if (self.state.clip_data or force):
@@ -58,7 +114,14 @@ class VispyVolumeViewerMixin(BaseVispyViewerMixin):
                 coords = np.array([[-dx, -dy, -dz], [dx, dy, dz]])
                 coords = (self._vispy_widget._multivol.transform.imap(coords)[:, :3] /
                           self._vispy_widget._multivol.resolution)
-                self._vispy_widget._multivol.set_clip(self.state.clip_data, coords.ravel())
+                # Flipping an axis limit (x_min > x_max) gives the transform a
+                # negative scale, which swaps the two mapped corners so the clip
+                # box comes out inverted (min > max) and the shader clips away
+                # everything. Sort per-axis so the clip box stays well-formed.
+                lo = np.minimum(coords[0], coords[1])
+                hi = np.maximum(coords[0], coords[1])
+                self._vispy_widget._multivol.set_clip(self.state.clip_data,
+                                                      np.concatenate([lo, hi]))
             else:
                 self._vispy_widget._multivol.set_clip(False, [0, 0, 0, 1, 1, 1])
 

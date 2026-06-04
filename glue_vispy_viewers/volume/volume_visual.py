@@ -101,6 +101,9 @@ class MultiVolumeVisual(VolumeVisual):
         self.shared_program['u_clip_min'] = [0, 0, 0]
         self.shared_program['u_clip_max'] = [1, 1, 1]
 
+        # Set initial cutting plane
+        self.set_cutting_plane(None)
+
         # Set up texture vertices - note that these variables are required by
         # the parent VolumeVisual class.
 
@@ -209,6 +212,19 @@ class MultiVolumeVisual(VolumeVisual):
     def set_multiply(self, label, label_other):
         self.volumes[label]['multiply'] = label_other
         self._update_shader()
+
+    def set_cutting_plane(self, parameters):
+        if parameters is None:
+            # Flag the shader to skip the cutting-plane code path entirely.
+            # The abc/d uniforms still need *some* value bound or vispy
+            # will complain at draw time, but it doesn't matter what.
+            self.shared_program['u_cutting_plane_enabled'] = 0
+            self.shared_program['u_cutting_plane_abc'] = [0, 0, 1]
+            self.shared_program['u_cutting_plane_d'] = 0.
+        else:
+            self.shared_program['u_cutting_plane_enabled'] = 1
+            self.shared_program['u_cutting_plane_abc'] = list(parameters[:3])
+            self.shared_program['u_cutting_plane_d'] = float(parameters[3])
 
     # The following methods don't require any changes to the shader code, so we
     # don't update the shader after setting the OpenGL variables.
@@ -397,10 +413,7 @@ class MultiVolumeVisual(VolumeVisual):
         if not any(self.enabled):
             return
         else:
-            try:
-                super(MultiVolumeVisual, self).draw()
-            except Exception:
-                pass
+            super(MultiVolumeVisual, self).draw()
 
 
 MultiVolume = create_visual_node(MultiVolumeVisual)

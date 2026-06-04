@@ -112,6 +112,35 @@ def volume_clip_off(viewer):
     viewer.state.clip_data = False
 
 
+def volume_cutting_plane(viewer):
+    """L1448 with a plasma colormap and a tilted top cutting plane.
+
+    Exercises the advanced-mode cutting plane controls. The chosen
+    ``cut_tilt``/``cut_rotation``/``cut_depth`` reproduce the shader
+    plane ``0.5 y + z = 180`` (in 0..256 v_position coordinates), a
+    roughly horizontal cut tilted along the depth axis. The camera is
+    rotated 180 degrees around the z-axis from its default azimuth so
+    the cut surface faces the viewer. Roughly half the volume is
+    removed, leaving the bright L1448 cloud sliced open from above.
+    """
+    import matplotlib.pyplot as plt
+    layer = viewer.state.layers[0]
+    layer.alpha = 1.0
+    layer.color_mode = 'Linear'
+    layer.cmap = plt.cm.plasma
+    layer.v_min = -0.7
+    layer.v_max = 2.74
+    viewer.state.cut_enabled = True
+    viewer.state.cut_mode = 'Advanced'
+    # arccos(1/sqrt(1.25)) and pi/2 give the unit normal (0, 0.447, 0.894);
+    # cut_depth places the plane just past the cube centre on the +normal side.
+    import numpy as np
+    viewer.state.cut_tilt = float(np.arccos(1.0 / np.sqrt(1.25)))
+    viewer.state.cut_rotation = float(np.pi / 2)
+    viewer.state.cut_depth = 0.524088
+    viewer._vispy_widget.view.camera.azimuth += 180
+
+
 def volume_with_scatter_overlay(app, viewer, vol_data, scatter_data):
     """Volume rendering with a 1D scatter overlay."""
     basic_volume(viewer)
