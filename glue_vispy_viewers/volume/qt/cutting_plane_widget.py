@@ -100,7 +100,7 @@ class CuttingPlaneWidget(QtWidgets.QWidget):
                               'Y': self.radio_axis_y,
                               'Z': self.radio_axis_z}
 
-        def on_toggled(checked, axis=None):
+        def on_toggled(checked):
             for ax, btn in self._axis_buttons.items():
                 if btn.isChecked():
                     if self.state.cut_axis != ax:
