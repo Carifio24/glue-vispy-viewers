@@ -1,5 +1,5 @@
 import numpy as np
-from echo import CallbackProperty, SelectionCallbackProperty
+from echo import CallbackProperty, SelectionCallbackProperty, delay_callback
 
 from glue.viewers.volume3d.viewer_state import VolumeViewerState3D
 
@@ -142,6 +142,26 @@ class Vispy3DVolumeViewerState(VolumeViewerState3D):
     cut_rotation = CallbackProperty(
         0.0, docstring='Azimuthal angle of the plane normal, radians (0..2*pi).')
     cut_depth = CallbackProperty(0.5, docstring='Depth of the cut, 0 (no cut) to 1 (full cut).')
+
+    def flip_cut(self):
+        """Swap the shown and clipped sides of the cutting plane in place.
+
+        Negates the plane normal (``tilt -> pi - tilt``,
+        ``rotation -> rotation + pi``) and mirrors the depth
+        (``depth -> 1 - depth``) so the plane stays put while the kept and
+        removed regions swap. An axis-aligned Simple-mode cut can only ever
+        keep the minus-axis side, so flipping converts the current axis to
+        the equivalent free orientation and switches to Advanced mode.
+        """
+        with delay_callback(self, 'cut_mode', 'cut_tilt', 'cut_rotation', 'cut_depth'):
+            if self.cut_mode == 'Simple':
+                tilt, rotation = _axis_angles(self.cut_axis)
+                self.cut_mode = 'Advanced'
+            else:
+                tilt, rotation = self.cut_tilt, self.cut_rotation
+            self.cut_tilt = float(np.pi - tilt)
+            self.cut_rotation = float((rotation + np.pi) % (2.0 * np.pi))
+            self.cut_depth = 1.0 - self.cut_depth
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

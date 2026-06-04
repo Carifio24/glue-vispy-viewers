@@ -64,6 +64,9 @@
                 <v-subheader class="pl-0 slider-label">depth</v-subheader>
                 <v-slider v-model="cut_depth" :min="0" :max="1" :step="0.001" hide-details thumb-label="hidden" />
             </div>
+            <div>
+                <v-btn small block class="mt-2" @click="flip_cut">Flip shown/clipped side</v-btn>
+            </div>
         </template>
     </div>
 </template>

@@ -28,3 +28,6 @@ class Volume3DViewerStateWidget(v.VuetifyTemplate):
             "cut_mode": "selection",
             "cut_axis": "selection",
         })
+
+    def vue_flip_cut(self, *args):
+        self.state.flip_cut()

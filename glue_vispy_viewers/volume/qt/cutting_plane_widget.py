@@ -82,6 +82,12 @@ class CuttingPlaneWidget(QtWidgets.QWidget):
         depth_layout.addWidget(self.value_cut_depth)
         layout.addWidget(self._depth_box)
 
+        # Flip button: swaps the shown and clipped sides of the plane. Named
+        # ``button_flip_cut`` so echo's autoconnect wires its click straight to
+        # ``state.flip_cut`` (Simple-mode cuts switch to Advanced when flipped).
+        self.button_flip_cut = QtWidgets.QPushButton('Flip shown/clipped side')
+        layout.addWidget(self.button_flip_cut)
+
         layout.addStretch(1)
 
     def _wire_radio_buttons(self):
@@ -114,7 +120,7 @@ class CuttingPlaneWidget(QtWidgets.QWidget):
     def _on_enabled_change(self, *args):
         on = bool(self.state.cut_enabled)
         for w in (self._mode_row_widget, self._simple_box,
-                  self._advanced_box, self._depth_box):
+                  self._advanced_box, self._depth_box, self.button_flip_cut):
             w.setEnabled(on)
 
     def _on_mode_change(self, *args):
