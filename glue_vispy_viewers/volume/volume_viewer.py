@@ -89,7 +89,14 @@ class VispyVolumeViewerMixin(BaseVispyViewerMixin):
                 coords = np.array([[-dx, -dy, -dz], [dx, dy, dz]])
                 coords = (self._vispy_widget._multivol.transform.imap(coords)[:, :3] /
                           self._vispy_widget._multivol.resolution)
-                self._vispy_widget._multivol.set_clip(self.state.clip_data, coords.ravel())
+                # Flipping an axis limit (x_min > x_max) gives the transform a
+                # negative scale, which swaps the two mapped corners so the clip
+                # box comes out inverted (min > max) and the shader clips away
+                # everything. Sort per-axis so the clip box stays well-formed.
+                lo = np.minimum(coords[0], coords[1])
+                hi = np.maximum(coords[0], coords[1])
+                self._vispy_widget._multivol.set_clip(self.state.clip_data,
+                                                      np.concatenate([lo, hi]))
             else:
                 self._vispy_widget._multivol.set_clip(False, [0, 0, 0, 1, 1, 1])
 

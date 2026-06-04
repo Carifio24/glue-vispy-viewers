@@ -1,7 +1,11 @@
+import numpy as np
+import pytest
+
 from glue.core import DataCollection
 from glue.core.application_base import Application
 
-from ...tests.helpers import inverted_glue_colors, set_canvas_size, visual_test
+from ...tests.helpers import (HAS_VISUAL_TEST_DEPS, inverted_glue_colors,
+                              set_canvas_size, visual_test)
 from ..volume_viewer import SimpleVispyVolumeViewer
 from . import scenes
 
@@ -11,6 +15,34 @@ def _make_viewer(data, extra_data=()):
     viewer = app.new_data_viewer(SimpleVispyVolumeViewer, data=data)
     set_canvas_size(viewer, 500, 500)
     return app, viewer
+
+
+def _rendered_data_fraction(viewer):
+    """Fraction of canvas pixels that differ from the background corner."""
+    img = np.asarray(viewer._vispy_widget.canvas.render())[..., :3].astype(int)
+    background = img[0, 0]
+    return (np.abs(img - background).sum(-1) > 10).mean()
+
+
+@pytest.mark.skipif(not HAS_VISUAL_TEST_DEPS,
+                    reason="requires Pillow, vispy[glfw] and a display")
+def test_flip_axis_limit_keeps_volume_visible():
+    # Regression test: flipping an axis limit (so x_min > x_max) gives the
+    # limit transform a negative scale, which used to leave the clip box with
+    # an inverted axis (min > max) so the shader clipped the whole volume away.
+    # The data should stay visible after flipping each axis in turn.
+    data = scenes.blob_data()
+    _, viewer = _make_viewer(data)
+    scenes.basic_volume(viewer)
+    assert viewer.state.clip_data
+    baseline = _rendered_data_fraction(viewer)
+    assert baseline > 0.1
+    try:
+        for flip in (viewer.state.flip_x, viewer.state.flip_y, viewer.state.flip_z):
+            flip()
+            assert _rendered_data_fraction(viewer) > 0.5 * baseline
+    finally:
+        viewer.close()
 
 
 @visual_test(tolerance=5)
