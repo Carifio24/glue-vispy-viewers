@@ -269,17 +269,17 @@ void main() {{
         vec4 plane_total_color = vec4(0., 0., 0., 0.);
         vec4 plane_color = vec4(0., 0., 0., 0.);
         float plane_count = 0.;
-        float plane_max_alpha = 0.;
         float plane_val;
 
         {plane_sample}
 
         if (plane_count > 0.) {{
             plane_total_color /= plane_count;
-            // Premultiply rgb by the sampled colormap alpha so that Fixed-colour
-            // layers (which encode data only in alpha) still show data variation
-            // as brightness on the slice; Linear-mode layers have alpha == 1 in
-            // their visible range, so this leaves them at full intensity.
+            // Premultiply rgb by the sampled colormap alpha so the value shows
+            // as brightness on the slice: Fixed-colour layers encode the data
+            // only in alpha, and for colourmaps the alpha tracks the value too,
+            // so out-of-range (and low) values fade to dark rather than leaving
+            // transparent holes in the slice.
             plane_total_color.rgb *= plane_total_color.a;
             // The slider value is the final overlay alpha so that at
             // opacity == 1 the slice fully covers the volume behind it.
@@ -386,9 +386,13 @@ def get_frag_shader(volumes, clipped=False, n_volume_max=5):
         # has the user's opacity slider for that, and pulling u_weight in
         # would dim Linear-mode slices.
         plane_sample += "plane_color = $cmap{0:d}(plane_val);\n".format(index)
-        plane_sample += "plane_total_color += plane_color.a * plane_color;\n"
-        plane_sample += "plane_max_alpha = max(plane_color.a, plane_max_alpha);\n"
-        plane_sample += "plane_count += plane_color.a;\n\n"
+        # Unlike the volume MIP pass, the slice image should appear across the
+        # whole cut surface, not only where the colormap alpha (i.e. the volume
+        # opacity) is non-zero. Count every in-bounds sample and average the
+        # colourmap colours directly so values at or below v_min still render
+        # (as dark pixels via the premultiply) instead of leaving holes.
+        plane_sample += "plane_total_color += plane_color;\n"
+        plane_sample += "plane_count += 1.0;\n\n"
         if clipped:
             plane_sample += "}\n\n"
         plane_sample += "}\n\n"
