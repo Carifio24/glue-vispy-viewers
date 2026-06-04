@@ -45,6 +45,35 @@ def test_flip_axis_limit_keeps_volume_visible():
         viewer.close()
 
 
+@pytest.mark.skipif(not HAS_VISUAL_TEST_DEPS,
+                    reason="requires Pillow, vispy[glfw] and a display")
+def test_cutting_plane_works_at_non_default_resolution():
+    # The cutting plane lives in the shader cube which spans 0..resolution, so
+    # a centred cut must remove roughly half the volume at any resolution --
+    # not only the default 256. Also exercise changing the resolution while
+    # the cut is active, which must refresh the plane uniforms.
+    data = scenes.blob_data()
+    _, viewer = _make_viewer(data)
+    scenes.basic_volume(viewer)
+    viewer.state.cut_enabled = True
+    viewer.state.cut_mode = 'Simple'
+    viewer.state.cut_axis = 'Z'
+    viewer.state.cut_depth = 0.5
+    try:
+        # Switching resolution with the cut active must refresh the plane
+        # uniforms; at each resolution the centred cut should still remove a
+        # meaningful chunk of the volume.
+        for resolution in (64, 256):
+            viewer.state.resolution = resolution
+            viewer.state.cut_enabled = False
+            uncut = _rendered_data_fraction(viewer)
+            viewer.state.cut_enabled = True
+            cut = _rendered_data_fraction(viewer)
+            assert uncut - cut > 0.05, (resolution, uncut, cut)
+    finally:
+        viewer.close()
+
+
 @visual_test(tolerance=5)
 def test_visual_volume3d_basic():
     data = scenes.blob_data()

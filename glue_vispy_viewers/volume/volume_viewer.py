@@ -67,6 +67,7 @@ class VispyVolumeViewerMixin(BaseVispyViewerMixin):
 
         for attr in ('cut_enabled', 'cut_mode', 'cut_axis',
                      'cut_tilt', 'cut_rotation', 'cut_depth', 'cut_flip',
+                     'resolution',
                      'x_min', 'x_max', 'y_min', 'y_max', 'z_min', 'z_max'):
             self.state.add_callback(attr, self._update_cutting_plane)
         self._update_cutting_plane()

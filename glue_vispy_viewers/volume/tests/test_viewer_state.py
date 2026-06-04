@@ -1,7 +1,7 @@
 import numpy as np
 
 from ..viewer_state import (Vispy3DVolumeViewerState, cutting_plane_from_state,
-                            cutting_plane_polygon, _CUBE_CENTER)
+                            cutting_plane_polygon, _cube_extent)
 
 
 def test_default_disabled():
@@ -19,7 +19,7 @@ def test_simple_axis_z():
     a, b, c, d = cutting_plane_from_state(state)
     assert (a, b) == (0.0, 0.0)
     assert c == 1.0
-    assert d == -_CUBE_CENTER  # plane at z = 128
+    assert d == -_cube_extent(state) / 2  # plane through the cube centre
 
 
 def test_simple_axis_x_and_y():
@@ -42,9 +42,9 @@ def test_depth_endpoints_are_outside_cube():
     state.cut_axis = 'Z'
     state.cut_depth = 0.0
     _, _, _, d_no_cut = cutting_plane_from_state(state)
-    # depth=0 -> plane just past the +normal corner of the cube; the
-    # plane crosses z = -d, which for normal +z must lie beyond z=256.
-    assert -d_no_cut > 256
+    # depth=0 -> plane just past the +normal corner of the cube; the plane
+    # crosses z = -d, which for normal +z must lie beyond the cube extent.
+    assert -d_no_cut > _cube_extent(state)
     state.cut_depth = 1.0
     _, _, _, d_all_cut = cutting_plane_from_state(state)
     # depth=1 -> plane just past the -normal corner: z = -d < 0.
@@ -187,11 +187,25 @@ def test_flip_cut_leaves_orientation_unchanged():
 def _data_kept_threshold(state):
     # For an X-axis cut, return (threshold, keep_low) describing the kept
     # half-space in data coordinates: data-x < threshold when keep_low.
-    from ..viewer_state import _CUBE_EXTENT
     a, b, c, d = cutting_plane_from_state(state)
-    A = a * _CUBE_EXTENT / (state.x_max - state.x_min)
+    A = a * _cube_extent(state) / (state.x_max - state.x_min)
     D = d - A * state.x_min
     return -D / A, A > 0
+
+
+def test_plane_scales_with_resolution():
+    # The shader cube spans 0..resolution, so a centred cut must land at
+    # resolution / 2 rather than a hard-coded 256-based value.
+    for resolution in (64, 256, 512):
+        state = Vispy3DVolumeViewerState()
+        state.resolution = resolution
+        state.cut_enabled = True
+        state.cut_mode = 'Simple'
+        state.cut_axis = 'Z'
+        state.cut_depth = 0.5
+        _, _, c, d = cutting_plane_from_state(state)
+        assert c == 1.0
+        assert d == -resolution / 2  # plane at z = resolution / 2
 
 
 def test_flipping_axis_limit_keeps_same_data_side():
@@ -221,4 +235,4 @@ def test_advanced_known_orientation():
     state.cut_depth = 0.5
     a, b, c, d = cutting_plane_from_state(state)
     assert (round(a, 6), round(b, 6), round(c, 6)) == (1.0, 0.0, 0.0)
-    assert round(d, 6) == -_CUBE_CENTER
+    assert round(d, 6) == -_cube_extent(state) / 2

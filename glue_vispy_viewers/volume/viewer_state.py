@@ -6,12 +6,16 @@ from glue.viewers.volume3d.viewer_state import VolumeViewerState3D
 __all__ = ['Vispy3DVolumeViewerState', 'cutting_plane_polygon']
 
 
-# In the volume fragment shader, v_position spans 0..u_shape on each axis,
-# with u_shape = (256, 256, 256) regardless of the underlying data shape.
-# Cutting plane parameters are computed relative to this cube.
-_CUBE_EXTENT = 256.0
-_CUBE_CENTER = _CUBE_EXTENT / 2.0
-_CUBE_HALF_DIAGONAL = (3.0 ** 0.5) * _CUBE_CENTER
+def _cube_extent(state):
+    """Side length of the shader cube the cutting plane is defined in.
+
+    The volume fragment shader's ``v_position`` spans ``0..u_shape`` on each
+    axis, and ``u_shape`` is ``(resolution,) * 3`` (the fixed-resolution
+    buffer size, independent of the underlying data shape). The cutting plane
+    parameters are therefore computed relative to a cube whose side equals the
+    current resolution rather than a fixed size.
+    """
+    return float(state.resolution)
 
 
 def _axis_angles(axis):
@@ -29,11 +33,11 @@ def _axis_angles(axis):
 def cutting_plane_from_state(state):
     """Return the shader (a, b, c, d) tuple, or ``None`` if disabled.
 
-    The cube extends 0..256 in each shader coordinate. The plane's signed
-    distance from the cube centre is moved linearly between
-    ``+_CUBE_HALF_DIAGONAL`` (depth=0, plane outside on the +normal side,
-    nothing cut) and ``-_CUBE_HALF_DIAGONAL`` (depth=1, plane outside on
-    the -normal side, everything cut).
+    The cube extends 0..resolution in each shader coordinate. The plane's
+    signed distance from the cube centre is moved linearly between
+    ``+half_diagonal`` (depth=0, plane outside on the +normal side, nothing
+    cut) and ``-half_diagonal`` (depth=1, plane outside on the -normal side,
+    everything cut).
     """
     if not state.cut_enabled:
         return None
@@ -41,20 +45,23 @@ def cutting_plane_from_state(state):
         tilt, rotation = _axis_angles(state.cut_axis)
     else:
         tilt, rotation = state.cut_tilt, state.cut_rotation
+    extent = _cube_extent(state)
+    center = extent / 2.0
+    half_diagonal = (3.0 ** 0.5) * center
     a = np.sin(tilt) * np.cos(rotation)
     b = np.sin(tilt) * np.sin(rotation)
     c = np.cos(tilt)
-    offset = _CUBE_HALF_DIAGONAL * (1.0 - 2.0 * state.cut_depth)
-    d = -(a + b + c) * _CUBE_CENTER - offset
+    offset = half_diagonal * (1.0 - 2.0 * state.cut_depth)
+    d = -(a + b + c) * center - offset
     # Flipping an axis limit (max < min) reverses the data along that axis in
-    # the volume texture, so reflect the plane across the axis (v -> 256 - v)
+    # the volume texture, so reflect the plane across the axis (v -> extent - v)
     # to keep the cut on the same data side as the bounding box and axis ticks.
     if state.x_max < state.x_min:
-        a, d = -a, d + _CUBE_EXTENT * a
+        a, d = -a, d + extent * a
     if state.y_max < state.y_min:
-        b, d = -b, d + _CUBE_EXTENT * b
+        b, d = -b, d + extent * b
     if state.z_max < state.z_min:
-        c, d = -c, d + _CUBE_EXTENT * c
+        c, d = -c, d + extent * c
     if state.cut_flip:
         # Negate the whole plane equation: the same geometric plane, with the
         # kept and removed half-spaces swapped.
@@ -80,19 +87,20 @@ def cutting_plane_polygon(state):
     if plane is None:
         return None
 
-    # Convert the shader plane (which lives in 0..256 v_position coords)
-    # into data coords. With ``v_k = (k - k_min) * 256 / (k_max - k_min)``
+    # Convert the shader plane (which lives in 0..extent v_position coords)
+    # into data coords. With ``v_k = (k - k_min) * extent / (k_max - k_min)``
     # the equation ``a*vx + b*vy + c*vz + d = 0`` becomes
     # ``A*x + B*y + C*z + D = 0`` with the scaling below.
     a, b, c, d = plane
+    extent = _cube_extent(state)
     rng_x = state.x_max - state.x_min
     rng_y = state.y_max - state.y_min
     rng_z = state.z_max - state.z_min
     if rng_x == 0 or rng_y == 0 or rng_z == 0:
         return None
-    A = a * _CUBE_EXTENT / rng_x
-    B = b * _CUBE_EXTENT / rng_y
-    C = c * _CUBE_EXTENT / rng_z
+    A = a * extent / rng_x
+    B = b * extent / rng_y
+    C = c * extent / rng_z
     D = d - A * state.x_min - B * state.y_min - C * state.z_min
     n = np.array([A, B, C])
 
