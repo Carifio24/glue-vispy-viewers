@@ -1,5 +1,5 @@
 import numpy as np
-from echo import CallbackProperty, SelectionCallbackProperty, delay_callback
+from echo import CallbackProperty, SelectionCallbackProperty
 
 from glue.viewers.volume3d.viewer_state import VolumeViewerState3D
 
@@ -46,6 +46,10 @@ def cutting_plane_from_state(state):
     c = np.cos(tilt)
     offset = _CUBE_HALF_DIAGONAL * (1.0 - 2.0 * state.cut_depth)
     d = -(a + b + c) * _CUBE_CENTER - offset
+    if state.cut_flip:
+        # Negate the whole plane equation: the same geometric plane, with the
+        # kept and removed half-spaces swapped.
+        a, b, c, d = -a, -b, -c, -d
     return float(a), float(b), float(c), float(d)
 
 
@@ -142,26 +146,18 @@ class Vispy3DVolumeViewerState(VolumeViewerState3D):
     cut_rotation = CallbackProperty(
         0.0, docstring='Azimuthal angle of the plane normal, radians (0..2*pi).')
     cut_depth = CallbackProperty(0.5, docstring='Depth of the cut, 0 (no cut) to 1 (full cut).')
+    cut_flip = CallbackProperty(
+        False, docstring='Whether to show the opposite side of the cutting plane.')
 
     def flip_cut(self):
-        """Swap the shown and clipped sides of the cutting plane in place.
+        """Swap which side of the cutting plane is shown versus clipped.
 
-        Negates the plane normal (``tilt -> pi - tilt``,
-        ``rotation -> rotation + pi``) and mirrors the depth
-        (``depth -> 1 - depth``) so the plane stays put while the kept and
-        removed regions swap. An axis-aligned Simple-mode cut can only ever
-        keep the minus-axis side, so flipping converts the current axis to
-        the equivalent free orientation and switches to Advanced mode.
+        Toggles :attr:`cut_flip`, which negates the plane equation in
+        ``cutting_plane_from_state`` so the kept and removed regions swap
+        without moving the plane or touching the tilt, rotation, depth or
+        mode. This works the same in Simple and Advanced mode.
         """
-        with delay_callback(self, 'cut_mode', 'cut_tilt', 'cut_rotation', 'cut_depth'):
-            if self.cut_mode == 'Simple':
-                tilt, rotation = _axis_angles(self.cut_axis)
-                self.cut_mode = 'Advanced'
-            else:
-                tilt, rotation = self.cut_tilt, self.cut_rotation
-            self.cut_tilt = float(np.pi - tilt)
-            self.cut_rotation = float((rotation + np.pi) % (2.0 * np.pi))
-            self.cut_depth = 1.0 - self.cut_depth
+        self.cut_flip = not self.cut_flip
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

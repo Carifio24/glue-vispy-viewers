@@ -82,9 +82,9 @@ class CuttingPlaneWidget(QtWidgets.QWidget):
         depth_layout.addWidget(self.value_cut_depth)
         layout.addWidget(self._depth_box)
 
-        # Flip button: swaps the shown and clipped sides of the plane. Named
+        # Flip button: toggles which side of the plane is shown. Named
         # ``button_flip_cut`` so echo's autoconnect wires its click straight to
-        # ``state.flip_cut`` (Simple-mode cuts switch to Advanced when flipped).
+        # ``state.flip_cut``, which just toggles the ``cut_flip`` boolean.
         self.button_flip_cut = QtWidgets.QPushButton('Flip shown/clipped side')
         layout.addWidget(self.button_flip_cut)
 

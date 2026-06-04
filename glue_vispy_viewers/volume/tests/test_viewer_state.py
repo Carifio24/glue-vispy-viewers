@@ -155,9 +155,9 @@ def test_flip_cut_is_an_involution():
     assert np.allclose(cutting_plane_from_state(state), before)
 
 
-def test_flip_cut_switches_simple_to_advanced():
-    # An axis-aligned Simple cut can only keep the minus-axis side, so a flip
-    # converts to the equivalent free orientation and switches to Advanced.
+def test_flip_cut_in_simple_mode_stays_simple():
+    # The flip works the same in Simple mode: it negates the plane (keeping the
+    # opposite axis side) without leaving Simple mode or touching the axis.
     state = Vispy3DVolumeViewerState()
     state.cut_enabled = True
     state.cut_mode = 'Simple'
@@ -165,8 +165,23 @@ def test_flip_cut_switches_simple_to_advanced():
     state.cut_depth = 0.3
     a, b, c, d = cutting_plane_from_state(state)
     state.flip_cut()
-    assert state.cut_mode == 'Advanced'
+    assert state.cut_mode == 'Simple'
+    assert state.cut_axis == 'Z'
     assert np.allclose(cutting_plane_from_state(state), [-a, -b, -c, -d])
+
+
+def test_flip_cut_leaves_orientation_unchanged():
+    # The flip only toggles cut_flip; tilt, rotation, depth and mode stay put.
+    state = Vispy3DVolumeViewerState()
+    state.cut_enabled = True
+    state.cut_mode = 'Advanced'
+    state.cut_tilt = 0.7
+    state.cut_rotation = 1.3
+    state.cut_depth = 0.3
+    state.flip_cut()
+    assert state.cut_flip is True
+    assert (state.cut_mode, state.cut_tilt, state.cut_rotation, state.cut_depth) == \
+        ('Advanced', 0.7, 1.3, 0.3)
 
 
 def test_advanced_known_orientation():
