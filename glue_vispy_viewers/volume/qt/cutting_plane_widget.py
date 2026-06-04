@@ -69,13 +69,14 @@ class CuttingPlaneWidget(QtWidgets.QWidget):
             btn.setChecked(True)
 
     def _on_enabled_change(self, *args):
-        on = bool(self.state.cut_enabled)
-        for w in (self.ui.mode_row, self.ui.simple_box,
-                  self.ui.advanced_box, self.ui.depth_box,
-                  self.ui.image_box, self.ui.button_flip_cut):
-            w.setEnabled(on)
+        self.ui.controls.setEnabled(bool(self.state.cut_enabled))
 
     def _on_mode_change(self, *args):
+        # Simple mode shows the axis radio buttons; Advanced mode shows the
+        # tilt/rotation sliders. Toggle each row's label and field together.
         simple = (self.state.cut_mode == 'Simple')
+        self.ui.label_axis.setVisible(simple)
         self.ui.simple_box.setVisible(simple)
-        self.ui.advanced_box.setVisible(not simple)
+        for w in (self.ui.label_tilt, self.ui.value_cut_tilt,
+                  self.ui.label_rotation, self.ui.value_cut_rotation):
+            w.setVisible(not simple)
