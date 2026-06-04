@@ -184,6 +184,33 @@ def test_flip_cut_leaves_orientation_unchanged():
         ('Advanced', 0.7, 1.3, 0.3)
 
 
+def _data_kept_threshold(state):
+    # For an X-axis cut, return (threshold, keep_low) describing the kept
+    # half-space in data coordinates: data-x < threshold when keep_low.
+    from ..viewer_state import _CUBE_EXTENT
+    a, b, c, d = cutting_plane_from_state(state)
+    A = a * _CUBE_EXTENT / (state.x_max - state.x_min)
+    D = d - A * state.x_min
+    return -D / A, A > 0
+
+
+def test_flipping_axis_limit_keeps_same_data_side():
+    # Flipping an axis limit mirrors the display, but the cut should stay on
+    # the same physical data so it mirrors together with the bounding box
+    # rather than snapping to the opposite data when the texture re-slices.
+    state = Vispy3DVolumeViewerState()
+    _set_extent(state)
+    state.cut_enabled = True
+    state.cut_mode = 'Simple'
+    state.cut_axis = 'X'
+    state.cut_depth = 0.3  # off-centre so the kept side is directional
+    before = _data_kept_threshold(state)
+    state.flip_x()
+    after = _data_kept_threshold(state)
+    assert np.allclose(before[0], after[0])
+    assert before[1] == after[1]
+
+
 def test_advanced_known_orientation():
     # Tilt = pi/2, rotation = 0 -> normal pointing +x; same as Simple X.
     state = Vispy3DVolumeViewerState()

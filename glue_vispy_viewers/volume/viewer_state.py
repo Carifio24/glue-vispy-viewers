@@ -46,6 +46,15 @@ def cutting_plane_from_state(state):
     c = np.cos(tilt)
     offset = _CUBE_HALF_DIAGONAL * (1.0 - 2.0 * state.cut_depth)
     d = -(a + b + c) * _CUBE_CENTER - offset
+    # Flipping an axis limit (max < min) reverses the data along that axis in
+    # the volume texture, so reflect the plane across the axis (v -> 256 - v)
+    # to keep the cut on the same data side as the bounding box and axis ticks.
+    if state.x_max < state.x_min:
+        a, d = -a, d + _CUBE_EXTENT * a
+    if state.y_max < state.y_min:
+        b, d = -b, d + _CUBE_EXTENT * b
+    if state.z_max < state.z_min:
+        c, d = -c, d + _CUBE_EXTENT * c
     if state.cut_flip:
         # Negate the whole plane equation: the same geometric plane, with the
         # kept and removed half-spaces swapped.

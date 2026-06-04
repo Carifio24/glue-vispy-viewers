@@ -71,6 +71,26 @@ class VispyVolumeViewerMixin(BaseVispyViewerMixin):
             self.state.add_callback(attr, self._update_cutting_plane)
         self._update_cutting_plane()
 
+        # The volume texture is only re-sliced lazily (on att/resolution
+        # changes), so flipping an axis limit would otherwise leave it stale
+        # until the next camera move. Re-slice immediately when an axis
+        # orientation flips so the cutting plane stays consistent right away.
+        for attr in ('x_min', 'x_max', 'y_min', 'y_max', 'z_min', 'z_max'):
+            self.state.add_callback(attr, self._resample_on_axis_flip)
+
+    def _resample_on_axis_flip(self, *args):
+        bounds = self._vispy_widget._multivol._data_bounds
+        if bounds is None:
+            return
+        # _data_bounds is ordered (z, y, x); compare each axis orientation
+        # (sign of max - min) against the limits the texture was sampled with.
+        (z_lo, z_hi, _), (y_lo, y_hi, _), (x_lo, x_hi, _) = bounds
+        flipped = ((self.state.x_max - self.state.x_min) * (x_hi - x_lo) < 0 or
+                   (self.state.y_max - self.state.y_min) * (y_hi - y_lo) < 0 or
+                   (self.state.z_max - self.state.z_min) * (z_hi - z_lo) < 0)
+        if flipped:
+            self._update_slice_transform()
+
     def _update_cutting_plane(self, *args):
         plane = cutting_plane_from_state(self.state)
         self._vispy_widget._multivol.set_cutting_plane(plane)
