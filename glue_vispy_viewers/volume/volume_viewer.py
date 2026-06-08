@@ -70,7 +70,14 @@ class VispyVolumeViewerMixin(BaseVispyViewerMixin):
                      'resolution',
                      'x_min', 'x_max', 'y_min', 'y_max', 'z_min', 'z_max'):
             self.state.add_callback(attr, self._update_cutting_plane)
+        self.state.add_callback('cut_plane_image_opacity', self._update_cut_plane_image_opacity)
         self._update_cutting_plane()
+        self._update_cut_plane_image_opacity()
+
+    def _update_cut_plane_image_opacity(self, *args):
+        opacity = self.state.cut_plane_image_opacity if self.state.cut_enabled else 0.0
+        self._vispy_widget._multivol.set_cut_plane_image_opacity(opacity)
+        self._vispy_widget.canvas.update()
 
         # The volume texture is only re-sliced lazily (on att/resolution
         # changes), so flipping an axis limit would otherwise leave it stale
@@ -95,6 +102,8 @@ class VispyVolumeViewerMixin(BaseVispyViewerMixin):
     def _update_cutting_plane(self, *args):
         plane = cutting_plane_from_state(self.state)
         self._vispy_widget._multivol.set_cutting_plane(plane)
+        # cut_enabled gates the plane image as well, so re-push opacity when it toggles.
+        self._update_cut_plane_image_opacity()
         polygon = cutting_plane_polygon(self.state)
         if polygon is None or len(polygon) < 3:
             self._cut_outline.visible = False
