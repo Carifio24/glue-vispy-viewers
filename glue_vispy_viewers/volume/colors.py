@@ -52,7 +52,7 @@ def get_translucent_cmap(r, g, b, stretch):
     return TranslucentCmap()
 
 
-def get_mpl_cmap(cmap, stretch):
+def get_mpl_cmap(cmap, color_stretch, alpha_stretch):
 
     # Mesa llvmpipe (Linux/CI software OpenGL) miscompiles the long
     # chained-if function emitted by ``create_cmap_template`` past some
@@ -75,14 +75,14 @@ def get_mpl_cmap(cmap, stretch):
         step = max(1, len(all_colors) // n_colors)
         colors = list(all_colors[::step])[:n_colors]
         n_colors = len(colors)
-        ts = stretch([index / n_colors for index in range(n_colors)])
-        colors = [[*color, t] for t, color in zip(ts, colors)]
+        alpha_ts = alpha_stretch([index / n_colors for index in range(n_colors)])
+        colors = [[*color, t] for t, color in zip(alpha_ts, colors)]
     else:
-        ts = stretch([index / n_colors for index in range(n_colors)])
-        colors = [[*cmap(t)[:3], t] for t in ts]
+        alpha_ts = alpha_stretch([index / n_colors for index in range(n_colors)])
+        colors = [[*cmap(t)[:3], t] for t in alpha_ts]
 
-    stretch_glsl = glsl_for_stretch(stretch)
-    template = create_cmap_template(n_colors, stretch_glsl)
+    color_stretch_glsl = glsl_for_stretch(color_stretch)
+    template = create_cmap_template(n_colors, color_stretch_glsl)
 
     class MatplotlibCmap(BaseColormap):
         glsl_map = template
