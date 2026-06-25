@@ -1,6 +1,7 @@
 from glue.config import AsinhStretch, LinearStretch, LogStretch, SqrtStretch, DictRegistry
 from matplotlib.colors import ListedColormap
-from vispy.color import BaseColormap
+from vispy.color import BaseColormap, Colormap
+from numpy import linspace
 
 
 class GLSLStretchRegistry(DictRegistry):
@@ -22,16 +23,11 @@ def create_cmap_template(n, stretch_glsl):
     ts = tuple((i + 1) / n for i in range(n-1))
     lines = [
         "vec4 translucent_colormap(float t) {",
-        f"    float s = {stretch_glsl};"
+        "    return texture2D(s_texture, vec2(t, 0.0));"
+        "}",
     ]
-    for i, t in enumerate(ts):
-        lines.append(f"    if (s <= {t})")
-        lines.append(f"        {{ return $color_{i}; }}")
-    lines.append(f"    return $color_{n-1};")
-    lines.append("}")
 
     return "\n".join(lines)
-
 
 def glsl_for_stretch(stretch, parameter="t"):
     template = stretch_glsl.members.get(type(stretch), "{param}")
@@ -75,16 +71,20 @@ def get_mpl_cmap(cmap, stretch):
         step = max(1, len(all_colors) // n_colors)
         colors = list(all_colors[::step])[:n_colors]
         n_colors = len(colors)
-        ts = stretch([index / n_colors for index in range(n_colors)])
+        ts = stretch([index / (n_colors - 1) for index in range(n_colors)])
         colors = [[*color, t] for t, color in zip(ts, colors)]
     else:
-        ts = stretch([index / n_colors for index in range(n_colors)])
+        ts = stretch([index / (n_colors - 1) for index in range(n_colors)])
         colors = [[*cmap(t)[:3], t] for t in ts]
 
     stretch_glsl = glsl_for_stretch(stretch)
     template = create_cmap_template(n_colors, stretch_glsl)
 
-    class MatplotlibCmap(BaseColormap):
-        glsl_map = template
+    class MatplotlibCmap(Colormap):
 
-    return MatplotlibCmap(colors=colors)
+        def __init__(self, colors, controls):
+            print(controls)
+            super().__init__(colors, controls=controls, interpolation="linear")
+
+
+    return MatplotlibCmap(colors=colors, controls=ts)
