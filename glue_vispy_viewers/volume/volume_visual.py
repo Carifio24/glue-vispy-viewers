@@ -71,7 +71,7 @@ class MultiVolumeVisual(VolumeVisual):
         Absolute maximum number of volumes that can be shown.
     """
 
-    def __init__(self, n_volume_max=16, emulate_texture=False, bgcolor='white', resolution=256):
+    def __init__(self, n_volume_max=8, emulate_texture=False, bgcolor='white', resolution=256):
 
         # Choose texture class
         tex_cls = TextureEmulated3D if emulate_texture else Texture3D
@@ -262,6 +262,8 @@ class MultiVolumeVisual(VolumeVisual):
         self.volumes[label]['cmap'] = cmap
         index = self.volumes[label]['index']
         self.shared_program.frag['cmap{0:d}'.format(index)] = Function(cmap.glsl_map)
+        if hasattr(cmap, "texture_name"):
+            self.shared_program[cmap.texture_name] = cmap.texture_lut()
 
     def set_clim(self, label, clim):
         # Avoid setting the same limits again

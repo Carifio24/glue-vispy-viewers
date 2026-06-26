@@ -1,7 +1,7 @@
 from glue.config import AsinhStretch, LinearStretch, LogStretch, SqrtStretch, DictRegistry
 from matplotlib.colors import ListedColormap
 from vispy.color import BaseColormap, Colormap
-from numpy import linspace
+from uuid import uuid4
 
 
 class GLSLStretchRegistry(DictRegistry):
@@ -19,19 +19,19 @@ stretch_glsl.add(AsinhStretch,
 stretch_glsl.add(LinearStretch, "{parameter}")
 
 
-def create_cmap_template(n, stretch_glsl):
-    ts = tuple((i + 1) / n for i in range(n-1))
-    lines = [
-        "vec4 translucent_colormap(float t) {",
-        "    return texture2D(s_texture, vec2(t, 0.0));"
-        "}",
-    ]
-
-    return "\n".join(lines)
-
 def glsl_for_stretch(stretch, parameter="t"):
     template = stretch_glsl.members.get(type(stretch), "{param}")
     return template.format(stretch=stretch, parameter=parameter)
+
+
+class CustomColormap(Colormap):
+
+    def __init__(self, colors, controls=None, interpolation="linear"):
+        super().__init__(colors, controls=controls, interpolation=interpolation)
+
+        self.uuid = uuid4().hex
+        self.texture_name = f"texture2D_LUT_{self.uuid}"
+        self.glsl_map = self.glsl_map.replace("texture2D_LUT", self.texture_name)
 
 
 def get_translucent_cmap(r, g, b, stretch):
@@ -50,41 +50,14 @@ def get_translucent_cmap(r, g, b, stretch):
 
 def get_mpl_cmap(cmap, stretch):
 
-    # Mesa llvmpipe (Linux/CI software OpenGL) miscompiles the long
-    # chained-if function emitted by ``create_cmap_template`` past some
-    # length. Uniform-data probes suggested the chain is fine up to ~100
-    # ifs, but real-data tests show n=100 produces dark-speckle artifacts
-    # on a small fraction of t values (~1000 broken pixels in an L1448
-    # cube render at n=100, vs 0 at n=80 and n=64). 64 is a comfortable
-    # margin that's been visually verified to match Apple's GL output on
-    # real data. Apple's GL handles long chains fine; this cap is purely
-    # to keep CI/headless renders matching real-GPU output.
-    #
-    # Most matplotlib cmaps (including plasma/viridis/inferno) are
-    # ``ListedColormap`` with 256 entries -- without this cap the bug
-    # triggers on every standard mpl cmap.
-    n_colors = 64
-
     if isinstance(cmap, ListedColormap):
-        all_colors = cmap.colors
-        # Subsample if the cmap has more entries than n_colors
-        step = max(1, len(all_colors) // n_colors)
-        colors = list(all_colors[::step])[:n_colors]
+        colors = cmap.colors
         n_colors = len(colors)
         ts = stretch([index / (n_colors - 1) for index in range(n_colors)])
         colors = [[*color, t] for t, color in zip(ts, colors)]
     else:
+        n_colors = 256
         ts = stretch([index / (n_colors - 1) for index in range(n_colors)])
         colors = [[*cmap(t)[:3], t] for t in ts]
 
-    stretch_glsl = glsl_for_stretch(stretch)
-    template = create_cmap_template(n_colors, stretch_glsl)
-
-    class MatplotlibCmap(Colormap):
-
-        def __init__(self, colors, controls):
-            print(controls)
-            super().__init__(colors, controls=controls, interpolation="linear")
-
-
-    return MatplotlibCmap(colors=colors, controls=ts)
+    return CustomColormap(colors=colors, controls=ts, interpolation="linear")
