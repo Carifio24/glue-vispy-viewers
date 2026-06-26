@@ -73,6 +73,7 @@ class VispyVolumeViewerMixin(BaseVispyViewerMixin):
         self.state.add_callback('cut_plane_image_opacity', self._update_cut_plane_image_opacity)
         self._update_cutting_plane()
         self._update_cut_plane_image_opacity()
+        self._update_cut_plane_image_color()
 
     def _update_cut_plane_image_opacity(self, *args):
         opacity = self.state.cut_plane_image_opacity if self.state.cut_enabled else 0.0
@@ -85,6 +86,9 @@ class VispyVolumeViewerMixin(BaseVispyViewerMixin):
         # orientation flips so the cutting plane stays consistent right away.
         for attr in ('x_min', 'x_max', 'y_min', 'y_max', 'z_min', 'z_max'):
             self.state.add_callback(attr, self._resample_on_axis_flip)
+
+    def _update_cut_plane_image_color(self, *args):
+        pass
 
     def _resample_on_axis_flip(self, *args):
         bounds = self._vispy_widget._multivol._data_bounds
