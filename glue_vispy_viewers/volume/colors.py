@@ -60,6 +60,9 @@ class CustomColormap(BaseColormap):
         }}
         """
 
+        super().__init__(colors, bad_color=bad_color,
+                         high_color=high_color, low_color=low_color)
+
     def texture_lut(self):
         return self.texture_map_data
 
