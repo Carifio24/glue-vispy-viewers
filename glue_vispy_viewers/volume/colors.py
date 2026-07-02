@@ -44,6 +44,8 @@ class CustomColormap(BaseColormap):
 
         c_rgba = ColorArray(colors).rgba
         self.texture_map_data = np.zeros((LUT_len, 1, 4), dtype=np.float32)
+        texture_len = self.texture_map_data.shape[0]
+        x = np.linspace(0.0, 1.0, texture_len)
         self.texture_map_data[:, 0, 0] = np.interp(x, controls, c_rgba[:, 0])
         self.texture_map_data[:, 0, 1] = np.interp(x, controls, c_rgba[:, 1])
         self.texture_map_data[:, 0, 2] = np.interp(x, controls, c_rgba[:, 2])
