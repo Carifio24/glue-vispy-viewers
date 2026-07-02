@@ -54,13 +54,14 @@ class CustomColormap(BaseColormap):
         self.uuid = uuid4().hex
         self.texture_name = f"texture2D_LUT_{self.uuid}"
         self.glsl_map = f"""
-        uniform sample2D {self.texture_name};
+        uniform sampler2D {self.texture_name};
         vec4 colormap(float t) {{
             return texture2D({self.texture_name}, vec2(0.0, clamp(t, 0.0, 1.0)));
         }}
         """
-        super().__init__(colors, bad_color=bad_color,
-                         high_color=high_color, low_color=low_color)
+
+    def texture_lut(self):
+        return self.texture_map_data
 
 
 def get_translucent_cmap(r, g, b, stretch):
