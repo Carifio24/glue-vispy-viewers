@@ -232,8 +232,6 @@ class MultiVolumeVisual(VolumeVisual):
         self.shared_program['u_cut_plane_image_opacity'] = float(opacity)
 
     def set_cut_plane_image_bgcolor(self, color):
-        print("Setting cut plane bgcolor")
-        print(Color(color).rgba)
         self.shared_program['u_cut_plane_image_bgcolor'] = Color(color).rgba
 
     # The following methods don't require any changes to the shader code, so we

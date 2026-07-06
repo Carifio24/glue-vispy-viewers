@@ -393,7 +393,8 @@ def get_frag_shader(volumes, clipped=False, n_volume_max=5):
         # opacity) is non-zero. Count every in-bounds sample and average the
         # colourmap colours directly so values at or below v_min still render
         # (as dark pixels via the premultiply) instead of leaving holes.
-        plane_sample += "plane_total_color.rgb = mix(plane_total_color.rgb, plane_color.rgb, plane_color.a);\n"
+        plane_sample += ("plane_total_color.rgb = "
+                         "mix(plane_total_color.rgb, plane_color.rgb, plane_color.a);\n")
         plane_sample += "plane_count += 1.0;\n\n"
         if clipped:
             plane_sample += "}\n\n"
