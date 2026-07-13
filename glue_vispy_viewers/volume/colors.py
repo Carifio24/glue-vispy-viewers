@@ -1,3 +1,4 @@
+from math import floor
 from glue.config import AsinhStretch, LinearStretch, LogStretch, SqrtStretch, DictRegistry
 from matplotlib.colors import ListedColormap
 from vispy.color import BaseColormap
@@ -18,14 +19,13 @@ stretch_glsl.add(AsinhStretch,
 stretch_glsl.add(LinearStretch, "{parameter}")
 
 
-def create_cmap_template(n, stretch_glsl):
+def create_cmap_template(n):
     ts = tuple((i + 1) / n for i in range(n-1))
     lines = [
         "vec4 translucent_colormap(float t) {",
-        f"    float s = {stretch_glsl};"
     ]
     for i, t in enumerate(ts):
-        lines.append(f"    if (s <= {t})")
+        lines.append(f"    if (t <= {t})")
         lines.append(f"        {{ return $color_{i}; }}")
     lines.append(f"    return $color_{n-1};")
     lines.append("}")
@@ -52,7 +52,7 @@ def get_translucent_cmap(r, g, b, stretch):
     return TranslucentCmap()
 
 
-def get_mpl_cmap(cmap, stretch):
+def get_mpl_cmap(cmap, alpha_stretch, color_stretch):
 
     # Mesa llvmpipe (Linux/CI software OpenGL) miscompiles the long
     # chained-if function emitted by ``create_cmap_template`` past some
@@ -75,14 +75,18 @@ def get_mpl_cmap(cmap, stretch):
         step = max(1, len(all_colors) // n_colors)
         colors = list(all_colors[::step])[:n_colors]
         n_colors = len(colors)
-        ts = stretch([index / n_colors for index in range(n_colors)])
-        colors = [[*color, t] for t, color in zip(ts, colors)]
+        base_ts = [index / n_colors for index in range(n_colors)]
+        alpha_ts = alpha_stretch(base_ts)
+        color_ts = color_stretch(base_ts)
+        color_indices = [floor(t * n_colors) for t in color_ts]
+        colors = [[*colors[cidx][:3], t] for t, cidx in zip(alpha_ts, color_indices)]
     else:
-        ts = stretch([index / n_colors for index in range(n_colors)])
-        colors = [[*cmap(t)[:3], t] for t in ts]
+        base_ts = [index / n_colors for index in range(n_colors)]
+        alpha_ts = alpha_stretch(base_ts)
+        color_ts = color_stretch(base_ts)
+        colors = [[*cmap(color_t)[:3], alpha_t] for color_t, alpha_t in zip(alpha_ts, color_ts)]
 
-    stretch_glsl = glsl_for_stretch(stretch)
-    template = create_cmap_template(n_colors, stretch_glsl)
+    template = create_cmap_template(n_colors)
 
     class MatplotlibCmap(BaseColormap):
         glsl_map = template
